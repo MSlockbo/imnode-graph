@@ -35,102 +35,102 @@
 \DoxyCodeLine{00032\ \textcolor{keyword}{using\ }ImPinType\ \ \ \ \ \ =\ int;}
 \DoxyCodeLine{00033\ \textcolor{keyword}{using\ }ImPinFlags\ \ \ \ \ =\ int;}
 \DoxyCodeLine{00034\ \textcolor{keyword}{using\ }ImPinDirection\ =\ bool;}
-\DoxyCodeLine{00035\ \textcolor{keyword}{using\ }ImPinCallback\ \ =\ void(*)(ImPinType\ type,\ \textcolor{keywordtype}{void}*);}
+\DoxyCodeLine{00035\ }
 \DoxyCodeLine{00036\ }
-\DoxyCodeLine{00037\ }
-\DoxyCodeLine{00038\ \textcolor{comment}{//\ Data\ Structures\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
-\DoxyCodeLine{00039\ }
-\DoxyCodeLine{00040\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}};}
-\DoxyCodeLine{00041\ }
-\DoxyCodeLine{00042\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_pin_ptr}{ImPinPtr}};}
-\DoxyCodeLine{00043\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_pin_connection}{ImPinConnection}};}
-\DoxyCodeLine{00044\ }
-\DoxyCodeLine{00045\ \textcolor{comment}{//\ =====================================================================================================================}}
-\DoxyCodeLine{00046\ \textcolor{comment}{//\ Enums}}
-\DoxyCodeLine{00047\ \textcolor{comment}{//\ =====================================================================================================================}}
-\DoxyCodeLine{00048\ }
-\DoxyCodeLine{00049\ \textcolor{keyword}{enum}\ ImNodeGraphFlags\_}
-\DoxyCodeLine{00050\ \{}
-\DoxyCodeLine{00051\ \ \ \ \ ImNodeGraphFlags\_None\ \ \ \ \ =\ 0}
-\DoxyCodeLine{00052\ ,\ \ \ ImNodeGraphFlags\_NoHeader\ =\ 1\ <<\ 0}
-\DoxyCodeLine{00053\ \};}
-\DoxyCodeLine{00054\ }
-\DoxyCodeLine{00055\ \textcolor{keyword}{enum}\ ImNodeGraphColor\_}
-\DoxyCodeLine{00056\ \{}
-\DoxyCodeLine{00057\ \ \ \ \ ImNodeGraphColor\_GridBackground}
-\DoxyCodeLine{00058\ ,\ \ \ ImNodeGraphColor\_GridPrimaryLines}
-\DoxyCodeLine{00059\ ,\ \ \ ImNodeGraphColor\_GridSecondaryLines}
-\DoxyCodeLine{00060\ }
-\DoxyCodeLine{00061\ ,\ \ \ ImNodeGraphColor\_NodeBackground}
-\DoxyCodeLine{00062\ ,\ \ \ ImNodeGraphColor\_NodeDefaultHeaderColor}
-\DoxyCodeLine{00063\ ,\ \ \ ImNodeGraphColor\_NodeTitleColor}
-\DoxyCodeLine{00064\ ,\ \ \ ImNodeGraphColor\_NodeOutline}
-\DoxyCodeLine{00065\ ,\ \ \ ImNodeGraphColor\_NodeOutlineSelected}
-\DoxyCodeLine{00066\ }
-\DoxyCodeLine{00067\ ,\ \ \ ImNodeGraphColor\_PinBackground}
-\DoxyCodeLine{00068\ ,\ \ \ ImNodeGraphColor\_PinName}
-\DoxyCodeLine{00069\ }
-\DoxyCodeLine{00070\ ,\ \ \ ImNodeGraphColor\_SelectRegionBackground}
-\DoxyCodeLine{00071\ ,\ \ \ ImNodeGraphColor\_SelectRegionOutline}
-\DoxyCodeLine{00072\ }
-\DoxyCodeLine{00073\ ,\ \ \ ImNodeGraphColor\_COUNT}
-\DoxyCodeLine{00074\ \};}
-\DoxyCodeLine{00075\ }
-\DoxyCodeLine{00076\ \textcolor{keyword}{enum}\ ImPinDirection\_}
-\DoxyCodeLine{00077\ \{}
-\DoxyCodeLine{00078\ \ \ \ \ ImPinDirection\_Input\ \ =\ false}
-\DoxyCodeLine{00079\ ,\ \ \ ImPinDirection\_Output\ =\ \textcolor{keyword}{true}}
-\DoxyCodeLine{00080\ \};}
-\DoxyCodeLine{00081\ }
-\DoxyCodeLine{00082\ \textcolor{keyword}{enum}\ ImPinFlags\_}
-\DoxyCodeLine{00083\ \{}
-\DoxyCodeLine{00084\ }
-\DoxyCodeLine{00085\ \};}
-\DoxyCodeLine{00086\ }
-\DoxyCodeLine{00087\ \textcolor{comment}{//\ =====================================================================================================================}}
-\DoxyCodeLine{00088\ \textcolor{comment}{//\ Data\ Structures}}
-\DoxyCodeLine{00089\ \textcolor{comment}{//\ =====================================================================================================================}}
-\DoxyCodeLine{00090\ }
-\DoxyCodeLine{00091\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_graph_camera}{ImGraphCamera}}}
-\DoxyCodeLine{00092\ \{}
-\DoxyCodeLine{00093\ \ \ \ \ ImVec2\ Position;}
-\DoxyCodeLine{00094\ \ \ \ \ \textcolor{keywordtype}{float}\ \ Scale;}
-\DoxyCodeLine{00095\ }
-\DoxyCodeLine{00096\ \ \ \ \ \mbox{\hyperlink{struct_im_graph_camera}{ImGraphCamera}}();}
-\DoxyCodeLine{00097\ \};}
-\DoxyCodeLine{00098\ }
-\DoxyCodeLine{00099\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}}
-\DoxyCodeLine{00100\ \{}
-\DoxyCodeLine{00101\ \ \ \ \ \textcolor{keywordtype}{float}\ GridPadding;}
-\DoxyCodeLine{00102\ \ \ \ \ \textcolor{keywordtype}{float}\ GridPrimaryStep;}
-\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keywordtype}{float}\ GridPrimaryThickness;}
-\DoxyCodeLine{00104\ \ \ \ \ \textcolor{keywordtype}{float}\ GridSecondaryThickness;}
-\DoxyCodeLine{00105\ }
-\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{float}\ NodeRounding;}
-\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keywordtype}{float}\ NodeOutlineThickness;}
-\DoxyCodeLine{00108\ \ \ \ \ \textcolor{keywordtype}{float}\ NodeOutlineSelectedThickness;}
-\DoxyCodeLine{00109\ }
-\DoxyCodeLine{00110\ \ \ \ \ \textcolor{keywordtype}{float}\ SelectRegionOutlineThickness;}
-\DoxyCodeLine{00111\ }
-\DoxyCodeLine{00112\ \ \ \ \ \textcolor{keywordtype}{float}\ PinPadding;}
-\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keywordtype}{float}\ PinOutlineThickness;}
-\DoxyCodeLine{00114\ }
-\DoxyCodeLine{00115\ \ \ \ \ \textcolor{keywordtype}{float}\ ConnectionThickness;}
-\DoxyCodeLine{00116\ }
-\DoxyCodeLine{00117\ \ \ \ \ ImColor\ Colors[ImNodeGraphColor\_COUNT];}
-\DoxyCodeLine{00118\ \ \ \ \ \textcolor{keyword}{const}\ ImColor*\ PinColors;}
-\DoxyCodeLine{00119\ }
-\DoxyCodeLine{00120\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}();}
-\DoxyCodeLine{00121\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}\&)\ =\ \textcolor{keywordflow}{default};}
-\DoxyCodeLine{00122\ }
-\DoxyCodeLine{00123\ \ \ \ \ ImU32\ GetColorU32(ImNodeGraphColor\ idx)\textcolor{keyword}{\ \ \ const\ }\{\ \textcolor{keywordflow}{return}\ Colors[idx];\ \}}
-\DoxyCodeLine{00124\ \ \ \ \ ImVec4\ GetColorVec4(ImNodeGraphColor\ idx)\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ Colors[idx];\ \}}
-\DoxyCodeLine{00125\ \};}
-\DoxyCodeLine{00126\ }
-\DoxyCodeLine{00127\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_settings}{ImNodeGraphSettings}}}
-\DoxyCodeLine{00128\ \{}
-\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keywordtype}{float}\ ZoomRate;}
-\DoxyCodeLine{00130\ \ \ \ \ \textcolor{keywordtype}{float}\ ZoomSmoothing;}
+\DoxyCodeLine{00037\ \textcolor{comment}{//\ Data\ Structures\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}};}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_pin_ptr}{ImPinPtr}};}
+\DoxyCodeLine{00042\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_pin_connection}{ImPinConnection}};}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00045\ \textcolor{comment}{//\ Enums}}
+\DoxyCodeLine{00046\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{keyword}{enum}\ ImNodeGraphFlags\_}
+\DoxyCodeLine{00049\ \{}
+\DoxyCodeLine{00050\ \ \ \ \ ImNodeGraphFlags\_None\ \ \ \ \ =\ 0}
+\DoxyCodeLine{00051\ ,\ \ \ ImNodeGraphFlags\_NoHeader\ =\ 1\ <<\ 0}
+\DoxyCodeLine{00052\ \};}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \textcolor{keyword}{enum}\ ImNodeGraphColor\_}
+\DoxyCodeLine{00055\ \{}
+\DoxyCodeLine{00056\ \ \ \ \ ImNodeGraphColor\_GridBackground}
+\DoxyCodeLine{00057\ ,\ \ \ ImNodeGraphColor\_GridPrimaryLines}
+\DoxyCodeLine{00058\ ,\ \ \ ImNodeGraphColor\_GridSecondaryLines}
+\DoxyCodeLine{00059\ }
+\DoxyCodeLine{00060\ ,\ \ \ ImNodeGraphColor\_NodeBackground}
+\DoxyCodeLine{00061\ ,\ \ \ ImNodeGraphColor\_NodeDefaultHeaderColor}
+\DoxyCodeLine{00062\ ,\ \ \ ImNodeGraphColor\_NodeTitleColor}
+\DoxyCodeLine{00063\ ,\ \ \ ImNodeGraphColor\_NodeOutline}
+\DoxyCodeLine{00064\ ,\ \ \ ImNodeGraphColor\_NodeOutlineSelected}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00066\ ,\ \ \ ImNodeGraphColor\_PinBackground}
+\DoxyCodeLine{00067\ ,\ \ \ ImNodeGraphColor\_PinName}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00069\ ,\ \ \ ImNodeGraphColor\_SelectRegionBackground}
+\DoxyCodeLine{00070\ ,\ \ \ ImNodeGraphColor\_SelectRegionOutline}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00072\ ,\ \ \ ImNodeGraphColor\_COUNT}
+\DoxyCodeLine{00073\ \};}
+\DoxyCodeLine{00074\ }
+\DoxyCodeLine{00075\ \textcolor{keyword}{enum}\ ImPinDirection\_}
+\DoxyCodeLine{00076\ \{}
+\DoxyCodeLine{00077\ \ \ \ \ ImPinDirection\_Input\ \ =\ false}
+\DoxyCodeLine{00078\ ,\ \ \ ImPinDirection\_Output\ =\ \textcolor{keyword}{true}}
+\DoxyCodeLine{00079\ \};}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \textcolor{keyword}{enum}\ ImPinFlags\_}
+\DoxyCodeLine{00082\ \{}
+\DoxyCodeLine{00083\ \ \ \ \ ImPinFlags\_None\ =\ 0}
+\DoxyCodeLine{00084\ \};}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00086\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00087\ \textcolor{comment}{//\ Data\ Structures}}
+\DoxyCodeLine{00088\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00090\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_graph_camera}{ImGraphCamera}}}
+\DoxyCodeLine{00091\ \{}
+\DoxyCodeLine{00092\ \ \ \ \ ImVec2\ Position;}
+\DoxyCodeLine{00093\ \ \ \ \ \textcolor{keywordtype}{float}\ \ Scale;}
+\DoxyCodeLine{00094\ }
+\DoxyCodeLine{00095\ \ \ \ \ \mbox{\hyperlink{struct_im_graph_camera}{ImGraphCamera}}();}
+\DoxyCodeLine{00096\ \};}
+\DoxyCodeLine{00097\ }
+\DoxyCodeLine{00098\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}}
+\DoxyCodeLine{00099\ \{}
+\DoxyCodeLine{00100\ \ \ \ \ \textcolor{keywordtype}{float}\ GridPrimaryStep;}
+\DoxyCodeLine{00101\ \ \ \ \ \textcolor{keywordtype}{float}\ GridPrimaryThickness;}
+\DoxyCodeLine{00102\ \ \ \ \ \textcolor{keywordtype}{float}\ GridSecondaryThickness;}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00104\ \ \ \ \ \textcolor{keywordtype}{float}\ NodeRounding;}
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keywordtype}{float}\ NodePadding;}
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{float}\ NodeOutlineThickness;}
+\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keywordtype}{float}\ NodeOutlineSelectedThickness;}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00109\ \ \ \ \ \textcolor{keywordtype}{float}\ SelectRegionOutlineThickness;}
+\DoxyCodeLine{00110\ }
+\DoxyCodeLine{00111\ \ \ \ \ \textcolor{keywordtype}{float}\ PinPadding;}
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{keywordtype}{float}\ PinOutlineThickness;}
+\DoxyCodeLine{00113\ }
+\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keywordtype}{float}\ ConnectionThickness;}
+\DoxyCodeLine{00115\ }
+\DoxyCodeLine{00116\ \ \ \ \ ImColor\ Colors[ImNodeGraphColor\_COUNT];}
+\DoxyCodeLine{00117\ \ \ \ \ \textcolor{keyword}{const}\ ImColor*\ PinColors;}
+\DoxyCodeLine{00118\ }
+\DoxyCodeLine{00119\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}();}
+\DoxyCodeLine{00120\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}\&)\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00122\ \ \ \ \ ImU32\ GetColorU32(ImNodeGraphColor\ idx)\textcolor{keyword}{\ \ \ const\ }\{\ \textcolor{keywordflow}{return}\ Colors[idx];\ \}}
+\DoxyCodeLine{00123\ \ \ \ \ ImVec4\ GetColorVec4(ImNodeGraphColor\ idx)\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ Colors[idx];\ \}}
+\DoxyCodeLine{00124\ \};}
+\DoxyCodeLine{00125\ }
+\DoxyCodeLine{00126\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_settings}{ImNodeGraphSettings}}}
+\DoxyCodeLine{00127\ \{}
+\DoxyCodeLine{00128\ \ \ \ \ \textcolor{keywordtype}{float}\ \ ZoomRate;}
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{keywordtype}{float}\ \ ZoomSmoothing;}
+\DoxyCodeLine{00130\ \ \ \ \ ImVec2\ ZoomBounds;}
 \DoxyCodeLine{00131\ }
 \DoxyCodeLine{00132\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_settings}{ImNodeGraphSettings}}();}
 \DoxyCodeLine{00133\ \};}
@@ -169,38 +169,32 @@
 \DoxyCodeLine{00172\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ DestroyContext(\mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}}*\ ctx\ =\ NULL);}
 \DoxyCodeLine{00173\ }
 \DoxyCodeLine{00178\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}}*\ GetCurrentContext();}
-\DoxyCodeLine{00179\ }
-\DoxyCodeLine{00180\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ SetCurrentContext(\mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}}*\ ctx);}
-\DoxyCodeLine{00181\ }
+\DoxyCodeLine{00179\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ SetCurrentContext(\mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}}*\ ctx);}
+\DoxyCodeLine{00180\ }
+\DoxyCodeLine{00181\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ AddFont(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ path,\ \textcolor{keywordtype}{float}\ size\ =\ 0,\ \textcolor{keyword}{const}\ ImWchar*\ glyph\_ranges\ =\ \textcolor{keyword}{nullptr});}
 \DoxyCodeLine{00182\ }
-\DoxyCodeLine{00183\ \textcolor{comment}{//\ Frame\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
-\DoxyCodeLine{00184\ }
-\DoxyCodeLine{00188\ \ \ \ \ \textcolor{keywordtype}{void}\ NewFrame();}
-\DoxyCodeLine{00189\ }
-\DoxyCodeLine{00193\ \ \ \ \ \textcolor{keywordtype}{void}\ EndFrame();}
+\DoxyCodeLine{00183\ }
+\DoxyCodeLine{00184\ \textcolor{comment}{//\ Graph\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00185\ }
+\DoxyCodeLine{00191\ \ \ \ \ \textcolor{keywordtype}{void}\ BeginGraph(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ title,\ \textcolor{keyword}{const}\ ImVec2\&\ size\_arg\ =\ \{\ 0,\ 0\ \});}
+\DoxyCodeLine{00192\ \ \ \ \ \textcolor{keywordtype}{void}\ EndGraph();}
+\DoxyCodeLine{00193\ }
 \DoxyCodeLine{00194\ }
-\DoxyCodeLine{00195\ }
-\DoxyCodeLine{00196\ \textcolor{comment}{//\ Graph\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
-\DoxyCodeLine{00197\ }
-\DoxyCodeLine{00203\ \ \ \ \ \textcolor{keywordtype}{void}\ BeginGraph(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ title,\ \textcolor{keyword}{const}\ ImVec2\&\ size\_arg\ =\ \{\ 0,\ 0\ \});}
-\DoxyCodeLine{00204\ \ \ \ \ \textcolor{keywordtype}{void}\ EndGraph();}
+\DoxyCodeLine{00195\ \textcolor{comment}{//\ Nodes\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00196\ }
+\DoxyCodeLine{00202\ \ \ \ \ \textcolor{keywordtype}{void}\ BeginNode(ImGuiID\ \textcolor{keywordtype}{id},\ ImVec2\&\ pos);}
+\DoxyCodeLine{00203\ \ \ \ \ \textcolor{keywordtype}{void}\ EndNode();}
+\DoxyCodeLine{00204\ }
 \DoxyCodeLine{00205\ }
-\DoxyCodeLine{00206\ }
-\DoxyCodeLine{00207\ \textcolor{comment}{//\ Nodes\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
-\DoxyCodeLine{00208\ }
-\DoxyCodeLine{00215\ \ \ \ \ \textcolor{keywordtype}{void}\ BeginNode(ImGuiID\ \textcolor{keywordtype}{id},\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ title,\ ImVec2\&\ pos,\ \textcolor{keyword}{const}\ ImColor\&\ headerColor);}
-\DoxyCodeLine{00216\ \ \ \ \ \textcolor{keywordtype}{void}\ EndNode();}
-\DoxyCodeLine{00217\ }
-\DoxyCodeLine{00218\ }
-\DoxyCodeLine{00219\ \textcolor{comment}{//\ Pins\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
-\DoxyCodeLine{00220\ }
-\DoxyCodeLine{00225\ \ \ \ \ \textcolor{keywordtype}{void}\ SetPinColors(\textcolor{keyword}{const}\ ImColor*\ colors);}
-\DoxyCodeLine{00226\ }
-\DoxyCodeLine{00231\ \ \ \ \ \textcolor{keywordtype}{void}\ SetPinCallback(ImPinCallback\ callback);}
-\DoxyCodeLine{00232\ }
-\DoxyCodeLine{00240\ \ \ \ \ \textcolor{keywordtype}{void}\ Pin(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ name,\ ImPinType\ type,\ ImPinDirection\ direction,\ ImPinFlags\ flags\ =\ 0,\ \textcolor{keywordtype}{void}*\ userData\ =\ \textcolor{keyword}{nullptr});}
-\DoxyCodeLine{00241\ \}}
-\DoxyCodeLine{00242\ }
-\DoxyCodeLine{00243\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//IMGUI\_NODES\_H}}
+\DoxyCodeLine{00206\ \textcolor{comment}{//\ Pins\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00207\ }
+\DoxyCodeLine{00212\ \ \ \ \ \textcolor{keywordtype}{void}\ SetPinColors(\textcolor{keyword}{const}\ ImColor*\ colors);}
+\DoxyCodeLine{00213\ }
+\DoxyCodeLine{00214\ }
+\DoxyCodeLine{00222\ \ \ \ \ \textcolor{keywordtype}{void}\ BeginPin(ImGuiID\ \textcolor{keywordtype}{id},\ ImPinType\ type,\ ImPinDirection\ direction,\ ImPinFlags\ flags\ =\ 0);}
+\DoxyCodeLine{00223\ \ \ \ \ \textcolor{keywordtype}{void}\ EndPin();}
+\DoxyCodeLine{00224\ \}}
+\DoxyCodeLine{00225\ }
+\DoxyCodeLine{00226\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//IMGUI\_NODES\_H}}
 
 \end{DoxyCode}

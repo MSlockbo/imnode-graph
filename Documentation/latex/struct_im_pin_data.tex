@@ -12,17 +12,17 @@ Data structure for pins.
 \doxysubsubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{struct_im_pin_data_acba73ba2ca3a7b6ac11055e72a2d70e1}\label{struct_im_pin_data_acba73ba2ca3a7b6ac11055e72a2d70e1} 
-{\bfseries Im\+Pin\+Data} (\mbox{\hyperlink{struct_im_node_data}{Im\+Node\+Data}} \texorpdfstring{$\ast$}{*}node, const char \texorpdfstring{$\ast$}{*}name, Im\+Pin\+Type type, Im\+Pin\+Direction dir, Im\+Pin\+Flags flags, void \texorpdfstring{$\ast$}{*}user\+\_\+data)
+\Hypertarget{struct_im_pin_data_a8527014db9fccd2d0f248bd0812e6f01}\label{struct_im_pin_data_a8527014db9fccd2d0f248bd0812e6f01} 
+{\bfseries Im\+Pin\+Data} (const \mbox{\hyperlink{struct_im_pin_data}{Im\+Pin\+Data}} \&)=default
+\item 
+\Hypertarget{struct_im_pin_data_a11aae7c2e236256046852507fd6f761f}\label{struct_im_pin_data_a11aae7c2e236256046852507fd6f761f} 
+\mbox{\hyperlink{struct_im_pin_data}{Im\+Pin\+Data}} \& {\bfseries operator=} (const \mbox{\hyperlink{struct_im_pin_data}{Im\+Pin\+Data}} \&)=default
 \end{DoxyCompactItemize}
 \doxysubsubsection*{Public Attributes}
 \begin{DoxyCompactItemize}
 \item 
 \Hypertarget{struct_im_pin_data_ae384bb8f4a12fb345d7e1033553c55fa}\label{struct_im_pin_data_ae384bb8f4a12fb345d7e1033553c55fa} 
 \mbox{\hyperlink{struct_im_node_data}{Im\+Node\+Data}} \texorpdfstring{$\ast$}{*} {\bfseries Node}
-\item 
-\Hypertarget{struct_im_pin_data_a9e6359d608cd7e99dca0bed06e587444}\label{struct_im_pin_data_a9e6359d608cd7e99dca0bed06e587444} 
-char \texorpdfstring{$\ast$}{*} {\bfseries Name}
 \item 
 \Hypertarget{struct_im_pin_data_a9d1118e39e7a29c5599cf376fa0e2adc}\label{struct_im_pin_data_a9d1118e39e7a29c5599cf376fa0e2adc} 
 Im\+Pin\+Type {\bfseries Type}
@@ -33,8 +33,11 @@ Im\+Pin\+Direction {\bfseries Direction}
 \Hypertarget{struct_im_pin_data_af870b27db8f0be43d8397605604092e8}\label{struct_im_pin_data_af870b27db8f0be43d8397605604092e8} 
 Im\+Pin\+Flags {\bfseries Flags}
 \item 
-\Hypertarget{struct_im_pin_data_a96370b50716ba715987555ca08226589}\label{struct_im_pin_data_a96370b50716ba715987555ca08226589} 
-void \texorpdfstring{$\ast$}{*} {\bfseries User\+Data}
+\Hypertarget{struct_im_pin_data_ae5bfd2d5b6e3507681833a30a9bd56f6}\label{struct_im_pin_data_ae5bfd2d5b6e3507681833a30a9bd56f6} 
+Im\+Vec2 {\bfseries Pos}
+\item 
+\Hypertarget{struct_im_pin_data_a1670d9c316a09f9b735a5a3aaf6f0fa6}\label{struct_im_pin_data_a1670d9c316a09f9b735a5a3aaf6f0fa6} 
+Im\+Rect {\bfseries Screen\+Bounds}
 \end{DoxyCompactItemize}
 
 

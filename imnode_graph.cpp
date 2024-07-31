@@ -50,7 +50,7 @@ void ImNodeGraph::Initialize()
 	ImNodeGraphContext& G = *GImGuiNodes;
 	IM_ASSERT(!G.Initialized);
 
-	// If no fonts were setup, add the default font
+	// If no fonts were set up, add the default font
 	if(G.Fonts.empty())
 	{
 		if(Ctx.IO.Fonts->Fonts.Size == 0) Ctx.IO.Fonts->AddFontDefault();
@@ -600,7 +600,7 @@ void ImNodeGraph::BeginGraph(const char* title, const ImVec2& size_arg)
 
 	// Get Graph
 	ImNodeGraphData* Graph = FindGraphByTitle(title);
-	const bool FirstFrame = (Graph == NULL);
+	const bool FirstFrame = (Graph == nullptr);
 	if(FirstFrame) Graph = CreateNewGraph(title);
 
 	ImGraphCamera& Camera = Graph->Camera;
@@ -648,7 +648,6 @@ void ImNodeGraph::EndGraph()
 
 	GraphBehaviour({ Graph->Pos, Graph->Pos + Graph->Size });
 
-	ImGraphCamera& Camera = Graph->Camera;
 	ImGui::PopFont();
 	ImGui::EndChild();
 
@@ -676,7 +675,6 @@ void ImNodeGraph::BeginNode(ImGuiID id, ImVec2& pos)
 
 	// Style
 	const ImNodeGraphStyle& Style = Graph->Style;
-	const ImGraphCamera&   Camera = Graph->Camera;
 
 	// Update node vars
 	Node.InputPins.Cleanup();  Node.InputPins.Reset();

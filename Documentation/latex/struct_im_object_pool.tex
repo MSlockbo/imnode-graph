@@ -1,0 +1,93 @@
+\doxysection{Im\+Object\+Pool\texorpdfstring{$<$}{<} T \texorpdfstring{$>$}{>} Struct Template Reference}
+\hypertarget{struct_im_object_pool}{}\label{struct_im_object_pool}\index{ImObjectPool$<$ T $>$@{ImObjectPool$<$ T $>$}}
+
+
+Data Structure for holding a pool of objects.  
+
+
+
+
+{\ttfamily \#include $<$imnode\+\_\+graph\+\_\+internal.\+h$>$}
+
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{struct_im_object_pool_adb79b011d770cab740efcd381fe32ad4}\label{struct_im_object_pool_adb79b011d770cab740efcd381fe32ad4} 
+using {\bfseries value\+\_\+type} = T
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{struct_im_object_pool_a398a1be53bed3512ed14c5083d174b47}\label{struct_im_object_pool_a398a1be53bed3512ed14c5083d174b47} 
+{\bfseries Im\+Object\+Pool} (const \mbox{\hyperlink{struct_im_object_pool}{Im\+Object\+Pool}} \&)=default
+\item 
+\Hypertarget{struct_im_object_pool_a98c6ca18fa19516fbffb47954c431ce5}\label{struct_im_object_pool_a98c6ca18fa19516fbffb47954c431ce5} 
+{\bfseries Im\+Object\+Pool} (\mbox{\hyperlink{struct_im_object_pool}{Im\+Object\+Pool}} \&\&)=default
+\item 
+\Hypertarget{struct_im_object_pool_a5880e549d956672bdaa95b3f378f113d}\label{struct_im_object_pool_a5880e549d956672bdaa95b3f378f113d} 
+size\+\_\+t {\bfseries Size} () const
+\item 
+\Hypertarget{struct_im_object_pool_aaf697f8283b85c647d0aa9327e18f1e8}\label{struct_im_object_pool_aaf697f8283b85c647d0aa9327e18f1e8} 
+void {\bfseries Clear} ()
+\item 
+\Hypertarget{struct_im_object_pool_abffbe04be3f1bc7f271a87178a1cfc15}\label{struct_im_object_pool_abffbe04be3f1bc7f271a87178a1cfc15} 
+void {\bfseries Reset} ()
+\item 
+\Hypertarget{struct_im_object_pool_a688d34c303ce25c5441a5dc559cb2f46}\label{struct_im_object_pool_a688d34c303ce25c5441a5dc559cb2f46} 
+void {\bfseries Cleanup} ()
+\item 
+\Hypertarget{struct_im_object_pool_a25a3ff6f156c3b00e30c69be9ca430dd}\label{struct_im_object_pool_a25a3ff6f156c3b00e30c69be9ca430dd} 
+void {\bfseries Push\+To\+Top} (Im\+Gui\+ID id)
+\item 
+\Hypertarget{struct_im_object_pool_a6f5677f1dda43bc8a093e85384f93758}\label{struct_im_object_pool_a6f5677f1dda43bc8a093e85384f93758} 
+T \& {\bfseries operator\mbox{[}$\,$\mbox{]}} (Im\+Gui\+ID id)
+\item 
+\Hypertarget{struct_im_object_pool_a659f34310a1ee3a9a3cc1128f2f9152f}\label{struct_im_object_pool_a659f34310a1ee3a9a3cc1128f2f9152f} 
+const T \& {\bfseries operator\mbox{[}$\,$\mbox{]}} (Im\+Gui\+ID id) const
+\item 
+\Hypertarget{struct_im_object_pool_af2c81c7acb2e5fe249ba4c33cf452eaf}\label{struct_im_object_pool_af2c81c7acb2e5fe249ba4c33cf452eaf} 
+bool {\bfseries operator()} (Im\+Gui\+ID id) const
+\item 
+\Hypertarget{struct_im_object_pool_a0c1613f2be87be8e68bc34e464c5220a}\label{struct_im_object_pool_a0c1613f2be87be8e68bc34e464c5220a} 
+T \& {\bfseries operator\mbox{[}$\,$\mbox{]}} (int idx)
+\item 
+\Hypertarget{struct_im_object_pool_a4b9d8dc58c1e39af095f1031436096da}\label{struct_im_object_pool_a4b9d8dc58c1e39af095f1031436096da} 
+const T \& {\bfseries operator\mbox{[}$\,$\mbox{]}} (int idx) const
+\item 
+\Hypertarget{struct_im_object_pool_a6d2b60ff4e40030f81fbe298495907c0}\label{struct_im_object_pool_a6d2b60ff4e40030f81fbe298495907c0} 
+bool {\bfseries operator()} (int idx) const
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{struct_im_object_pool_a06c68a69b43c2ee551745d9d871a10e2}\label{struct_im_object_pool_a06c68a69b43c2ee551745d9d871a10e2} 
+Im\+Vector$<$ T $>$ {\bfseries Data}
+\item 
+\Hypertarget{struct_im_object_pool_a6fa24ab95880c32961b741b279d209fa}\label{struct_im_object_pool_a6fa24ab95880c32961b741b279d209fa} 
+Im\+Vector$<$ bool $>$ {\bfseries Active}
+\item 
+\Hypertarget{struct_im_object_pool_a4ba9a8c4f02607ae0f4ef5a5fdfbb567}\label{struct_im_object_pool_a4ba9a8c4f02607ae0f4ef5a5fdfbb567} 
+Im\+Vector$<$ Im\+Gui\+ID $>$ {\bfseries ID}
+\item 
+\Hypertarget{struct_im_object_pool_af7529eb8fa707ecb6a627cd46cac7cce}\label{struct_im_object_pool_af7529eb8fa707ecb6a627cd46cac7cce} 
+Im\+Vector$<$ int $>$ {\bfseries Freed}
+\item 
+\Hypertarget{struct_im_object_pool_a45cef75f825beef90ebc8ca7eb8a5366}\label{struct_im_object_pool_a45cef75f825beef90ebc8ca7eb8a5366} 
+Im\+Gui\+Storage {\bfseries Map}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{struct_im_object_pool_addba5ba7eb950d402a3783d20fa64af3}\label{struct_im_object_pool_addba5ba7eb950d402a3783d20fa64af3} 
+static constexpr int {\bfseries nullidx} = -\/1
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$typename T$>$\newline
+struct Im\+Object\+Pool$<$ T $>$}
+Data Structure for holding a pool of objects. 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+imnode\+\_\+graph\+\_\+internal.\+h\end{DoxyCompactItemize}

@@ -12,11 +12,11 @@ Data structure for nodes.
 \doxysubsubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{struct_im_node_data_aceb5c1dc906d1a415a1008d6054e7993}\label{struct_im_node_data_aceb5c1dc906d1a415a1008d6054e7993} 
-{\bfseries Im\+Node\+Data} (\mbox{\hyperlink{struct_im_node_graph_data}{Im\+Node\+Graph\+Data}} \texorpdfstring{$\ast$}{*}graph, Im\+Gui\+ID id)
+\Hypertarget{struct_im_node_data_a2dad369ff0c149f8e20a5c44995552a6}\label{struct_im_node_data_a2dad369ff0c149f8e20a5c44995552a6} 
+{\bfseries Im\+Node\+Data} (const \mbox{\hyperlink{struct_im_node_data}{Im\+Node\+Data}} \&)
 \item 
-\Hypertarget{struct_im_node_data_a99db878abe36c5203140780a9d7b2047}\label{struct_im_node_data_a99db878abe36c5203140780a9d7b2047} 
-void {\bfseries Update\+Name} (const char \texorpdfstring{$\ast$}{*}name)
+\Hypertarget{struct_im_node_data_a81f0e203b13f1acad7ccf3240c0e6a75}\label{struct_im_node_data_a81f0e203b13f1acad7ccf3240c0e6a75} 
+\mbox{\hyperlink{struct_im_node_data}{Im\+Node\+Data}} \& {\bfseries operator=} (const \mbox{\hyperlink{struct_im_node_data}{Im\+Node\+Data}} \&)
 \end{DoxyCompactItemize}
 \doxysubsubsection*{Public Attributes}
 \begin{DoxyCompactItemize}
@@ -27,26 +27,23 @@ void {\bfseries Update\+Name} (const char \texorpdfstring{$\ast$}{*}name)
 \Hypertarget{struct_im_node_data_a92635eee513fc489645e8ff163901dfc}\label{struct_im_node_data_a92635eee513fc489645e8ff163901dfc} 
 Im\+Gui\+ID {\bfseries ID}
 \item 
-\Hypertarget{struct_im_node_data_a7a0b59b32c7227ec4da5e270f2b69f1b}\label{struct_im_node_data_a7a0b59b32c7227ec4da5e270f2b69f1b} 
-char \texorpdfstring{$\ast$}{*} {\bfseries Name}
-\item 
-\Hypertarget{struct_im_node_data_a766edf31365752e02144d66348b41d35}\label{struct_im_node_data_a766edf31365752e02144d66348b41d35} 
-bool {\bfseries Active}
-\item 
 \Hypertarget{struct_im_node_data_ac0b8b1c972f6e48f0c05472ecd21d2bf}\label{struct_im_node_data_ac0b8b1c972f6e48f0c05472ecd21d2bf} 
 Im\+Vec2 {\bfseries Root}
 \item 
-\Hypertarget{struct_im_node_data_ad9ad43a6af6c29e8a5e50d37002b17dc}\label{struct_im_node_data_ad9ad43a6af6c29e8a5e50d37002b17dc} 
-Im\+Color {\bfseries Header\+Color}
+\Hypertarget{struct_im_node_data_aa113ca42016777a72d873e5ac2b8d88b}\label{struct_im_node_data_aa113ca42016777a72d873e5ac2b8d88b} 
+Im\+Rect {\bfseries Screen\+Bounds}
 \item 
-\Hypertarget{struct_im_node_data_afdc2c50ba41294ec696a76da5dd2ac46}\label{struct_im_node_data_afdc2c50ba41294ec696a76da5dd2ac46} 
-Im\+Gui\+ID {\bfseries Bg\+Channel\+Index}
+\Hypertarget{struct_im_node_data_adc23aa0c10ea3082683f337e5e384a5f}\label{struct_im_node_data_adc23aa0c10ea3082683f337e5e384a5f} 
+int {\bfseries Bg\+Channel\+Index}
 \item 
-\Hypertarget{struct_im_node_data_afe372d586d9a146d6f3de8bc7098d8fe}\label{struct_im_node_data_afe372d586d9a146d6f3de8bc7098d8fe} 
-Im\+Gui\+ID {\bfseries Fg\+Channel\+Index}
+\Hypertarget{struct_im_node_data_a9370815a295a8cbec4371ee5adc4ed9a}\label{struct_im_node_data_a9370815a295a8cbec4371ee5adc4ed9a} 
+int {\bfseries Fg\+Channel\+Index}
 \item 
-\Hypertarget{struct_im_node_data_a2a15a68498f4c9d3b40e40899d07b7bf}\label{struct_im_node_data_a2a15a68498f4c9d3b40e40899d07b7bf} 
-Im\+Vector$<$ \mbox{\hyperlink{struct_im_pin_data}{Im\+Pin\+Data}} $>$ {\bfseries Pins}
+\Hypertarget{struct_im_node_data_aaf6b64c838aa47bcb359ccd783f86599}\label{struct_im_node_data_aaf6b64c838aa47bcb359ccd783f86599} 
+\mbox{\hyperlink{struct_im_object_pool}{Im\+Object\+Pool}}$<$ \mbox{\hyperlink{struct_im_pin_data}{Im\+Pin\+Data}} $>$ {\bfseries Input\+Pins}
+\item 
+\Hypertarget{struct_im_node_data_adf9a7582f65c0e24eb86bfb7a047ee27}\label{struct_im_node_data_adf9a7582f65c0e24eb86bfb7a047ee27} 
+\mbox{\hyperlink{struct_im_object_pool}{Im\+Object\+Pool}}$<$ \mbox{\hyperlink{struct_im_pin_data}{Im\+Pin\+Data}} $>$ {\bfseries Output\+Pins}
 \end{DoxyCompactItemize}
 
 
