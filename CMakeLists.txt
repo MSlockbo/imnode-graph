@@ -25,6 +25,7 @@ add_library(imnode-graph STATIC
 find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
+    get_filename_component(DOXYGEN_PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
     set(DOXYGEN_CONFIG_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
     set(DOXYGEN_CONFIG_OUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
 
