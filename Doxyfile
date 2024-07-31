@@ -1,5 +1,0 @@
-OUTPUT_DIRECTORY       = "D:/Maddie/Projects/OpenShaderDesigner/External/imnode-graph/Documentation/"
-INPUT                  = "D:/Maddie/Projects/OpenShaderDesigner/External/imnode-graph/README.md" "D:/Maddie/Projects/OpenShaderDesigner/External/imnode-graph/"
-RECURSIVE              = YES
-PROJECT_NAME           = "OpenShaderDesigner"
-PROJECT_NUMBER         = "0.0.1"
