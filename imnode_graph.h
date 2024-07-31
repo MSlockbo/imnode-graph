@@ -1,0 +1,226 @@
+// =====================================================================================================================
+// Copyright 2024 Medusa Slockbower
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// =====================================================================================================================
+
+#ifndef IMGUI_NODES_H
+#define IMGUI_NODES_H
+
+#include <imgui-docking/imgui.h>
+
+// =====================================================================================================================
+// Type & Forward Definitions
+// =====================================================================================================================
+
+// Typedefs ------------------------------------------------------------------------------------------------------------
+
+// Graph Types
+using ImNodeGraphColor   = int;
+using ImNodeGraphFlags   = int;
+
+// Pin Types
+using ImPinType      = int;
+using ImPinFlags     = int;
+using ImPinDirection = bool;
+
+
+// Data Structures -----------------------------------------------------------------------------------------------------
+
+struct ImNodeGraphContext;
+
+struct ImPinPtr;
+struct ImPinConnection;
+
+// =====================================================================================================================
+// Enums
+// =====================================================================================================================
+
+enum ImNodeGraphFlags_
+{
+	ImNodeGraphFlags_None     = 0
+,   ImNodeGraphFlags_NoHeader = 1 << 0
+};
+
+enum ImNodeGraphColor_
+{
+    ImNodeGraphColor_GridBackground
+,	ImNodeGraphColor_GridPrimaryLines
+,	ImNodeGraphColor_GridSecondaryLines
+
+,	ImNodeGraphColor_NodeBackground
+,   ImNodeGraphColor_NodeDefaultHeaderColor
+,	ImNodeGraphColor_NodeTitleColor
+,	ImNodeGraphColor_NodeOutline
+,	ImNodeGraphColor_NodeOutlineSelected
+
+,	ImNodeGraphColor_PinBackground
+,	ImNodeGraphColor_PinName
+
+,	ImNodeGraphColor_SelectRegionBackground
+,	ImNodeGraphColor_SelectRegionOutline
+
+,	ImNodeGraphColor_COUNT
+};
+
+enum ImPinDirection_
+{
+	ImPinDirection_Input  = false
+,   ImPinDirection_Output = true
+};
+
+enum ImPinFlags_
+{
+	ImPinFlags_None = 0
+};
+
+// =====================================================================================================================
+// Data Structures
+// =====================================================================================================================
+
+struct ImGraphCamera
+{
+	ImVec2 Position;
+	float  Scale;
+
+    ImGraphCamera();
+};
+
+struct ImNodeGraphStyle
+{
+	float GridPrimaryStep;
+	float GridPrimaryThickness;
+	float GridSecondaryThickness;
+
+	float NodeRounding;
+	float NodePadding;
+	float NodeOutlineThickness;
+	float NodeOutlineSelectedThickness;
+
+	float SelectRegionOutlineThickness;
+
+	float PinPadding;
+	float PinOutlineThickness;
+
+    float ConnectionThickness;
+
+	ImColor Colors[ImNodeGraphColor_COUNT];
+	const ImColor* PinColors;
+
+	ImNodeGraphStyle();
+	ImNodeGraphStyle(const ImNodeGraphStyle&) = default;
+
+    ImU32 GetColorU32(ImNodeGraphColor idx)   const { return Colors[idx]; }
+    ImVec4 GetColorVec4(ImNodeGraphColor idx) const { return Colors[idx]; }
+};
+
+struct ImNodeGraphSettings
+{
+	float  ZoomRate;
+	float  ZoomSmoothing;
+    ImVec2 ZoomBounds;
+
+    ImNodeGraphSettings();
+};
+
+struct ImPinPtr
+{
+	ImGuiID        Node;
+	ImGuiID        Pin;
+
+	bool operator<(const ImPinPtr& o) const
+	{
+		return Pin < o.Pin || Node < o.Node;
+	}
+};
+
+struct ImPinConnection
+{
+	ImPinPtr A, B;
+
+	bool operator<(const ImPinConnection& o) const
+	{
+		return A < o.A || B < o.B;
+	}
+};
+
+// =====================================================================================================================
+// Functionality
+// =====================================================================================================================
+
+namespace ImNodeGraph
+{
+// Context -------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * \brief Setup the ImNodeGraph Context, must be called after ImGui::CreateContext()
+	 */
+	ImNodeGraphContext* CreateContext();
+
+	/**
+	 * \brief Cleanup the ImNodeGraph Context, must be called before ImGui::DestroyContext()
+	 */
+	void                DestroyContext(ImNodeGraphContext* ctx = NULL);
+
+	/**
+	 * \brief Getter for the current context
+	 * \return Pointer to the current context
+	 */
+	ImNodeGraphContext* GetCurrentContext();
+    void                SetCurrentContext(ImNodeGraphContext* ctx);
+
+    void                AddFont(const char* path, float size = 0, const ImWchar* glyph_ranges = nullptr);
+
+
+// Graph ---------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * \brief Push a new graph to a window
+	 * \param title Title for the graph
+	 * \param size_arg Size of the graph,
+	 */
+	void BeginGraph(const char* title, const ImVec2& size_arg = { 0, 0 });
+	void EndGraph();
+
+
+// Nodes ---------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * \brief Push a new node to add widgets to in a window
+	 * \param title Title of the node
+	 * \return False if the node is collapsed
+	 */
+	void BeginNode(ImGuiID id, ImVec2& pos);
+	void EndNode();
+
+
+// Pins ----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * \brief Set the colors attributed to each pin type
+	 * \param colors Array of color values
+	 */
+	void SetPinColors(const ImColor* colors);
+
+
+	/**
+	 * \brief Add a pin to the node
+	 * \param name Name of the pin
+	 * \param type Type of the pin
+	 * \param direction Direction of the pin
+	 * \param userData Data associated with the node, used for attribute callback
+	 */
+	void BeginPin(ImGuiID id, ImPinType type, ImPinDirection direction, ImPinFlags flags = 0);
+	void EndPin();
+}
+
+#endif //IMGUI_NODES_H

@@ -1,0 +1,163 @@
+\doxysection{imnode\+\_\+graph\+\_\+internal.\+h}
+\hypertarget{imnode__graph__internal_8h_source}{}\label{imnode__graph__internal_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ Copyright\ 2024\ Medusa\ Slockbower}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ Licensed\ under\ the\ Apache\ License,\ Version\ 2.0\ (the\ "{}License"{});}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ you\ may\ not\ use\ this\ file\ except\ in\ compliance\ with\ the\ License.}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ You\ may\ obtain\ a\ copy\ of\ the\ License\ at}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ \textcolor{comment}{//\ \ http://www.apache.org/licenses/LICENSE-\/2.0}}
+\DoxyCodeLine{00008\ \textcolor{comment}{//}}
+\DoxyCodeLine{00009\ \textcolor{comment}{//\ Unless\ required\ by\ applicable\ law\ or\ agreed\ to\ in\ writing,\ software}}
+\DoxyCodeLine{00010\ \textcolor{comment}{//\ distributed\ under\ the\ License\ is\ distributed\ on\ an\ "{}AS\ IS"{}\ BASIS,}}
+\DoxyCodeLine{00011\ \textcolor{comment}{//\ WITHOUT\ WARRANTIES\ OR\ CONDITIONS\ OF\ ANY\ KIND,\ either\ express\ or\ implied.}}
+\DoxyCodeLine{00012\ \textcolor{comment}{//\ See\ the\ License\ for\ the\ specific\ language\ governing\ permissions\ and}}
+\DoxyCodeLine{00013\ \textcolor{comment}{//\ limitations\ under\ the\ License.}}
+\DoxyCodeLine{00014\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#ifndef\ IMGUI\_NODES\_INTERNAL\_H}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#define\ IMGUI\_NODES\_INTERNAL\_H}}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#include\ "{}imnode\_graph.h"{}}}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00021\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00022\ \textcolor{comment}{//\ Type\ \&\ Forward\ Definitions}}
+\DoxyCodeLine{00023\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00025\ \textcolor{keyword}{struct\ }ImRect;}
+\DoxyCodeLine{00026\ \textcolor{comment}{//\ Typedefs}}
+\DoxyCodeLine{00027\ \textcolor{keyword}{using\ }ImNodeGraphScope\ =\ int;}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \textcolor{comment}{//\ Data\ Structures}}
+\DoxyCodeLine{00030\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}};}
+\DoxyCodeLine{00031\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}};}
+\DoxyCodeLine{00032\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_data}{ImNodeData}};}
+\DoxyCodeLine{00033\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_pin_data}{ImPinData}};}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00035\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00036\ \textcolor{comment}{//\ Enums}}
+\DoxyCodeLine{00037\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{enum}\ ImNodeGraphScope\_}
+\DoxyCodeLine{00040\ \{}
+\DoxyCodeLine{00041\ \ \ \ \ ImNodeGraphScope\_None\ =\ 0}
+\DoxyCodeLine{00042\ ,\ \ \ ImNodeGraphScope\_Graph}
+\DoxyCodeLine{00043\ ,\ \ \ ImNodeGraphScope\_Node}
+\DoxyCodeLine{00044\ ,\ \ \ ImNodeGraphScope\_Pin}
+\DoxyCodeLine{00045\ \};}
+\DoxyCodeLine{00046\ }
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00049\ \textcolor{comment}{//\ Data\ Structures}}
+\DoxyCodeLine{00050\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00051\ }
+\DoxyCodeLine{00055\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}}}
+\DoxyCodeLine{00056\ \{}
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{keywordtype}{bool}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Initialized;}
+\DoxyCodeLine{00058\ \ \ \ \ ImFont*\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Font;}
+\DoxyCodeLine{00059\ \ \ \ \ ImNodeGraphScope\ \ \ \ \ \ \ \ \ \ \ Scope;}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \ \ \ \ ImVector<ImNodeGraphData*>\ Graphs;}
+\DoxyCodeLine{00062\ \ \ \ \ ImGuiStorage\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ GraphsById;}
+\DoxyCodeLine{00063\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}*\ \ \ \ \ \ \ \ \ \ \ CurrentGraph;}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}}();}
+\DoxyCodeLine{00066\ \};}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00071\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}}
+\DoxyCodeLine{00072\ \{}
+\DoxyCodeLine{00073\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}}*\ \ Ctx;}
+\DoxyCodeLine{00074\ \ \ \ \ ImNodeGraphFlags\ \ \ \ \ Flags;}
+\DoxyCodeLine{00075\ \ \ \ \ \textcolor{keywordtype}{char}*\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Name;}
+\DoxyCodeLine{00076\ \ \ \ \ ImGuiID\ \ \ \ \ \ \ \ \ \ \ \ \ \ ID;}
+\DoxyCodeLine{00077\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_style}{ImNodeGraphStyle}}\ \ \ \ \ Style;}
+\DoxyCodeLine{00078\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_settings}{ImNodeGraphSettings}}\ \ Settings;}
+\DoxyCodeLine{00079\ \ \ \ \ ImVec2\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Pos,\ Size;}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \ \ \ \ \mbox{\hyperlink{struct_im_graph_camera}{ImGraphCamera}}\ \ \ \ \ \ \ \ Camera;}
+\DoxyCodeLine{00082\ \ \ \ \ \textcolor{keywordtype}{float}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ TargetZoom;}
+\DoxyCodeLine{00083\ \ \ \ \ \textcolor{keywordtype}{bool}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ IsPanning;}
+\DoxyCodeLine{00084\ }
+\DoxyCodeLine{00085\ \ \ \ \ ImVector<ImNodeData*>\ Nodes;}
+\DoxyCodeLine{00086\ \ \ \ \ ImVector<int>\ \ \ \ \ \ \ \ \ NodesErased;}
+\DoxyCodeLine{00087\ \ \ \ \ ImVector<ImGuiID>\ \ \ \ \ NodesSubmitOrder;}
+\DoxyCodeLine{00088\ \ \ \ \ ImGuiStorage\ \ \ \ \ \ \ \ \ \ NodesByID;}
+\DoxyCodeLine{00089\ \ \ \ \ \mbox{\hyperlink{struct_im_node_data}{ImNodeData}}*\ \ \ \ \ \ \ \ \ \ \ CurrentNode;}
+\DoxyCodeLine{00090\ }
+\DoxyCodeLine{00091\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}(\mbox{\hyperlink{struct_im_node_graph_context}{ImNodeGraphContext}}*\ ctx,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ name);}
+\DoxyCodeLine{00092\ }
+\DoxyCodeLine{00093\ \ \ \ \ ImVec2\ GetCenter()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ Pos\ +\ Size\ *\ 0.5;\ \}}
+\DoxyCodeLine{00094\ \};}
+\DoxyCodeLine{00095\ }
+\DoxyCodeLine{00099\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_node_data}{ImNodeData}}}
+\DoxyCodeLine{00100\ \{}
+\DoxyCodeLine{00101\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}*\ \ \ \ Graph;}
+\DoxyCodeLine{00102\ \ \ \ \ ImGuiID\ \ \ \ \ \ \ \ \ \ \ \ \ ID;}
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keywordtype}{char}*\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Name;}
+\DoxyCodeLine{00104\ \ \ \ \ \textcolor{keywordtype}{bool}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Active;}
+\DoxyCodeLine{00105\ \ \ \ \ ImVec2\ \ \ \ \ \ \ \ \ \ \ \ \ \ Root;}
+\DoxyCodeLine{00106\ \ \ \ \ ImColor\ \ \ \ \ \ \ \ \ \ \ \ \ HeaderColor;}
+\DoxyCodeLine{00107\ \ \ \ \ ImGuiID\ \ \ \ \ \ \ \ \ \ \ \ \ BgChannelIndex,\ FgChannelIndex;}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00109\ \ \ \ \ ImVector<ImPinData>\ Pins;}
+\DoxyCodeLine{00110\ }
+\DoxyCodeLine{00111\ \ \ \ \ \mbox{\hyperlink{struct_im_node_data}{ImNodeData}}(\mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}*\ graph,\ ImGuiID\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00112\ \ \ \ \ \mbox{\hyperlink{struct_im_node_data}{\string~ImNodeData}}();}
+\DoxyCodeLine{00113\ }
+\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keywordtype}{void}\ UpdateName(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ name);}
+\DoxyCodeLine{00115\ \};}
+\DoxyCodeLine{00116\ }
+\DoxyCodeLine{00120\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_im_pin_data}{ImPinData}}}
+\DoxyCodeLine{00121\ \{}
+\DoxyCodeLine{00122\ \ \ \ \ \mbox{\hyperlink{struct_im_node_data}{ImNodeData}}*\ \ \ \ Node;}
+\DoxyCodeLine{00123\ \ \ \ \ \textcolor{keywordtype}{char}*\ \ \ \ \ \ \ \ \ \ Name;}
+\DoxyCodeLine{00124\ \ \ \ \ ImPinType\ \ \ \ \ \ Type;}
+\DoxyCodeLine{00125\ \ \ \ \ ImPinDirection\ Direction;}
+\DoxyCodeLine{00126\ \ \ \ \ ImPinFlags\ \ \ \ \ Flags;}
+\DoxyCodeLine{00127\ \ \ \ \ \textcolor{keywordtype}{void}*\ \ \ \ \ \ \ \ \ \ UserData;}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00129\ \ \ \ \ \mbox{\hyperlink{struct_im_pin_data}{ImPinData}}(\mbox{\hyperlink{struct_im_node_data}{ImNodeData}}*\ node,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ name,\ ImPinType\ type,\ ImPinDirection\ dir,\ ImPinFlags\ flags,\ \textcolor{keywordtype}{void}*\ user\_data);}
+\DoxyCodeLine{00130\ \};}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00132\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00133\ \textcolor{comment}{//\ Functionality}}
+\DoxyCodeLine{00134\ \textcolor{comment}{//\ =====================================================================================================================}}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00136\ \textcolor{keyword}{namespace\ }ImNodeGraph}
+\DoxyCodeLine{00137\ \{}
+\DoxyCodeLine{00138\ \textcolor{comment}{//\ Context\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00139\ }
+\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keywordtype}{void}\ Initialize();}
+\DoxyCodeLine{00141\ \ \ \ \ \textcolor{keywordtype}{void}\ Shutdown();}
+\DoxyCodeLine{00142\ }
+\DoxyCodeLine{00143\ \textcolor{comment}{//\ Graph\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00144\ }
+\DoxyCodeLine{00145\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}*\ FindGraphByID(ImGuiID\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00146\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}*\ FindGraphByTitle(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ title);}
+\DoxyCodeLine{00147\ \ \ \ \ \mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}*\ CreateNewGraph(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ title);}
+\DoxyCodeLine{00148\ }
+\DoxyCodeLine{00149\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ DrawGrid(\textcolor{keyword}{const}\ ImRect\&\ grid\_bounds);}
+\DoxyCodeLine{00150\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ GraphBehaviour(\textcolor{keyword}{const}\ ImRect\&\ grid\_bounds);}
+\DoxyCodeLine{00151\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ DrawGraph(\mbox{\hyperlink{struct_im_node_graph_data}{ImNodeGraphData}}*\ graph);}
+\DoxyCodeLine{00152\ }
+\DoxyCodeLine{00153\ \ \ \ \ ImGuiID\ \ \ \ \ \ \ \ \ \ PushChannel(\textcolor{keywordtype}{int}\ count);}
+\DoxyCodeLine{00154\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ SetChannel(ImGuiID\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00155\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ SwapChannel(ImGuiID\ a,\ ImGuiID\ b);}
+\DoxyCodeLine{00156\ }
+\DoxyCodeLine{00157\ \ \ \ \ ImVec2\ \ \ \ \ \ \ \ \ \ \ ScreenToGrid(\textcolor{keyword}{const}\ ImVec2\&\ pos);}
+\DoxyCodeLine{00158\ \ \ \ \ ImVec2\ \ \ \ \ \ \ \ \ \ \ GridToScreen(\textcolor{keyword}{const}\ ImVec2\&\ pos);}
+\DoxyCodeLine{00159\ }
+\DoxyCodeLine{00160\ \textcolor{comment}{//\ Nodes\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00161\ }
+\DoxyCodeLine{00162\ \ \ \ \ \mbox{\hyperlink{struct_im_node_data}{ImNodeData}}*\ \ \ \ \ \ FindNodeByID(ImGuiID\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00163\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ PushToTop(ImGuiID\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00164\ }
+\DoxyCodeLine{00165\ \ \ \ \ \mbox{\hyperlink{struct_im_node_data}{ImNodeData}}*\ \ \ \ \ \ CreateNode(ImGuiID\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00166\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ DestroyNode(\mbox{\hyperlink{struct_im_node_data}{ImNodeData}}*\ node);}
+\DoxyCodeLine{00167\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ \ \ \ \ \ \ DestroyNode(ImGuiID\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00168\ \}}
+\DoxyCodeLine{00169\ }
+\DoxyCodeLine{00170\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//IMGUI\_NODES\_INTERNAL\_H}}
+
+\end{DoxyCode}
