@@ -58,13 +58,10 @@ enum ImNodeGraphColor_
 ,	ImNodeGraphColor_GridSecondaryLines
 
 ,	ImNodeGraphColor_NodeBackground
-,   ImNodeGraphColor_NodeDefaultHeaderColor
-,	ImNodeGraphColor_NodeTitleColor
 ,	ImNodeGraphColor_NodeOutline
 ,	ImNodeGraphColor_NodeOutlineSelected
 
 ,	ImNodeGraphColor_PinBackground
-,	ImNodeGraphColor_PinName
 
 ,	ImNodeGraphColor_SelectRegionBackground
 ,	ImNodeGraphColor_SelectRegionOutline
@@ -108,7 +105,8 @@ struct ImNodeGraphStyle
 
 	float SelectRegionOutlineThickness;
 
-	float PinPadding;
+	float ItemSpacing;
+    float PinRadius;
 	float PinOutlineThickness;
 
     float ConnectionThickness;
@@ -136,11 +134,14 @@ struct ImPinPtr
 {
 	ImGuiID        Node;
 	ImGuiID        Pin;
+    ImPinDirection Direction;
 
 	bool operator<(const ImPinPtr& o) const
 	{
-		return Pin < o.Pin || Node < o.Node;
+		return Pin < o.Pin || Node < o.Node || Direction < o.Direction;
 	}
+
+    bool operator==(const ImPinPtr&) const = default;
 };
 
 struct ImPinConnection
@@ -191,6 +192,8 @@ namespace ImNodeGraph
 	void BeginGraph(const char* title, const ImVec2& size_arg = { 0, 0 });
 	void EndGraph();
 
+    float GetCameraScale();
+
 
 // Nodes ---------------------------------------------------------------------------------------------------------------
 
@@ -201,6 +204,9 @@ namespace ImNodeGraph
 	 */
 	void BeginNode(ImGuiID id, ImVec2& pos);
 	void EndNode();
+
+    void BeginNodeHeader(ImGuiID id, ImColor color);
+    void EndNodeHeader();
 
 
 // Pins ----------------------------------------------------------------------------------------------------------------

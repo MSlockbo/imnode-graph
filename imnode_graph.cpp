@@ -29,6 +29,8 @@ ImNodeGraphContext*   GImGuiNodes = nullptr;
 ImVector<ImNodeFontConfig> GFonts;
 float                GFontUpscale = 4.0f;
 
+ImVec4 operator*(const ImVec4& v, float s) { return { v.x * s, v.y * s, v.z * s, v.w * s }; }
+
 // =====================================================================================================================
 // Internal Functionality
 // =====================================================================================================================
@@ -120,6 +122,7 @@ ImNodeGraphData::ImNodeGraphData(ImNodeGraphContext* ctx, const char* name)
 	, IsPanning(false)
 	, CurrentNode(nullptr)
 	, CurrentPin(nullptr)
+	, FocusedPin(-1, -1, false)
 	, SubmitCount(0)
 { Name = ImStrdup(name); }
 
@@ -237,7 +240,10 @@ void ImNodeGraph::GraphBehaviour(const ImRect& grid_bounds)
 		Graph.IsPanning = false;
 
 	if(Graph.IsPanning)
+	{
 		Camera.Position -= Ctx.IO.MouseDelta / Camera.Scale;
+		ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+	}
 }
 
 void ImNodeGraph::DrawGraph(ImNodeGraphData* Graph)
@@ -246,11 +252,8 @@ void ImNodeGraph::DrawGraph(ImNodeGraphData* Graph)
 	ImDrawListSplitter& Splitter = DrawList._Splitter;
 	ImObjectPool<ImNodeData>& Nodes = Graph->Nodes;
 
-	for(int i = 0; i < Nodes.Size(); ++i)
+	for(ImNodeData& Node : Nodes)
 	{
-		if(!Nodes(i)) continue;
-
-		ImNodeData& Node = Nodes[i];
 		SetChannel(Node.BgChannelIndex);
 		DrawNode(Node);
 	}
@@ -458,24 +461,106 @@ ImPinData::ImPinData()
 	, Flags(ImPinFlags_None)
 	, Pos()
 	, ScreenBounds()
+	, Hovered(false)
 { }
 
 void ImNodeGraph::DrawNode(ImNodeData& Node)
 {
 	ImNodeGraphData*  Graph =  Node.Graph;
-	ImNodeGraphStyle& Style = Graph->Style;
-	ImGraphCamera&   Camera = Graph->Camera;
+	ImNodeGraphStyle& Style =  Graph->Style;
+	ImGraphCamera&   Camera =  Graph->Camera;
+	ImDrawList&    DrawList = *ImGui::GetCurrentWindow()->DrawList;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, Style.NodeOutlineThickness * Camera.Scale);
 	ImGui::PushStyleColor(ImGuiCol_Border, Style.GetColorU32(ImNodeGraphColor_NodeOutline));
 
+	// Render Base Frame
 	ImGui::RenderFrame(
 		Node.ScreenBounds.Min, Node.ScreenBounds.Max
-	,   Style.GetColorU32(ImNodeGraphColor_NodeBackground), true, Style.NodeRounding * Camera.Scale);
+	,   Style.GetColorU32(ImNodeGraphColor_NodeBackground), true, Style.NodeRounding * Camera.Scale
+	);
+
+	// Render Header
+	if(Node.Header())
+	{
+		// Same as base, but clipped
+		ImGui::PushClipRect(Node.Header->ScreenBounds.Min, Node.Header->ScreenBounds.Max, true);
+		ImGui::RenderFrame(
+			Node.ScreenBounds.Min, Node.ScreenBounds.Max
+		,   Node.Header->Color, true, Style.NodeRounding * Camera.Scale
+		);
+		ImGui::PopClipRect();
+
+		// Border line between header and content
+		DrawList.AddLine(
+			{ Node.Header->ScreenBounds.Min.x, Node.Header->ScreenBounds.Max.y }
+		,   { Node.Header->ScreenBounds.Max.x, Node.Header->ScreenBounds.Max.y }
+		,   Style.GetColorU32(ImNodeGraphColor_NodeOutline), Style.NodeOutlineThickness * Camera.Scale
+		);
+	}
 
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar();
 }
+
+void ImNodeGraph::DrawPinHead(ImPinData& pin)
+{
+	ImNodeGraphContext&   G = *GImGuiNodes;
+	ImNodeGraphData*  Graph =  G.CurrentGraph;
+
+	const ImNodeGraphStyle& Style =  Graph->Style;
+	const ImGraphCamera&   Camera =  Graph->Camera;
+	ImGuiWindow&           Window = *ImGui::GetCurrentWindow();
+
+	static const char format[] = "##pin%d";
+	char res[16 + 1] = "";
+	ImFormatString(res, IM_ARRAYSIZE(res), format, pin.ID);
+
+    ImVec4 PinColor = Style.PinColors[pin.Type].Value;
+    PinColor = PinColor * (pin.Hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left) ? 0.8f : 1.0f);
+
+    if(Graph->FocusedPin == pin) ImGui::PushStyleColor(ImGuiCol_FrameBg, PinColor);
+    else ImGui::PushStyleColor(ImGuiCol_FrameBg, Style.GetColorVec4(ImNodeGraphColor_PinBackground));
+
+	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, PinColor);
+	ImGui::PushStyleColor(ImGuiCol_FrameBgActive,  PinColor);
+	ImGui::PushStyleColor(ImGuiCol_Border,         PinColor);
+	ImGui::PushStyleColor(ImGuiCol_CheckMark,      PinColor);
+	ImGui::PushStyleColor(ImGuiCol_BorderShadow,   ImVec4(0, 0, 0, 0));
+
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, Style.PinOutlineThickness * Camera.Scale);
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,    ImVec2{ Style.ItemSpacing, Style.ItemSpacing } * Camera.Scale);
+
+	ImGui::RadioButton(res, false, Style.PinRadius * Camera.Scale);
+	pin.Hovered = ImGui::IsItemHovered();
+
+	ImGui::PopStyleVar(2);
+	ImGui::PopStyleColor(6);
+}
+
+void ImNodeGraph::DummyPinHead(ImPinData &pin)
+{
+	ImNodeGraphContext&   G = *GImGuiNodes;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+	const ImGraphCamera&   Camera =  Graph->Camera;
+    const ImNodeGraphStyle& Style =  Graph->Style;
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, Style.PinOutlineThickness * Camera.Scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,    ImVec2{ Style.ItemSpacing, Style.ItemSpacing } * Camera.Scale);
+
+    ImGuiWindow& Window = *ImGui::GetCurrentWindow();
+    ImGuiStyle&   IStyle = ImGui::GetStyle();
+    const ImVec2 label_size = ImGui::CalcTextSize("##", NULL, true);
+
+    const float square_sz = ImGui::GetFrameHeight();
+    const ImVec2 pos = Window.DC.CursorPos;
+    const ImRect total_bb(pos, pos + ImVec2(square_sz + (label_size.x > 0.0f ? IStyle.ItemInnerSpacing.x + label_size.x : 0.0f), label_size.y + IStyle.FramePadding.y * 2.0f));
+    ImGui::ItemSize(total_bb, IStyle.FramePadding.y);
+    ImGui::ItemAdd(total_bb, -1);
+    ImGui::SameLine();
+
+	ImGui::PopStyleVar(2);
+}
+
 
 // =====================================================================================================================
 // Public Functionality
@@ -547,12 +632,13 @@ ImNodeGraphStyle::ImNodeGraphStyle()
 
 	, NodePadding(8.0f)
 	, NodeRounding(8.0f)
-	, NodeOutlineThickness(1.0f)
+	, NodeOutlineThickness(2.0f)
 	, NodeOutlineSelectedThickness(4.0f)
 
 	, SelectRegionOutlineThickness(2.0f)
 
-	, PinPadding(2.0f)
+	, ItemSpacing(4.0f)
+	, PinRadius(8.0f)
 	, PinOutlineThickness(3.0f)
 
 	, ConnectionThickness(2.0f)
@@ -565,12 +651,10 @@ ImNodeGraphStyle::ImNodeGraphStyle()
 	Colors[ImNodeGraphColor_GridSecondaryLines] = ImColor(0x44, 0x44, 0x44);
 
 	Colors[ImNodeGraphColor_NodeBackground]      = ImColor(0x88, 0x88, 0x88);
-	Colors[ImNodeGraphColor_NodeTitleColor]      = ImColor(0xCC, 0xCC, 0xCC);
 	Colors[ImNodeGraphColor_NodeOutline]         = ImColor(0x33, 0x33, 0x33);
 	Colors[ImNodeGraphColor_NodeOutlineSelected] = ImColor(0xEF, 0xAE, 0x4B);
 
 	Colors[ImNodeGraphColor_PinBackground] = ImColor(0x22, 0x22, 0x22);
-	Colors[ImNodeGraphColor_PinName]       = ImColor(0x22, 0x22, 0x22);
 
 	Colors[ImNodeGraphColor_SelectRegionBackground] = ImColor(0xC9, 0x8E, 0x36, 0x44);
 	Colors[ImNodeGraphColor_SelectRegionOutline]    = ImColor(0xEF, 0xAE, 0x4B, 0xBB);
@@ -631,6 +715,9 @@ void ImNodeGraph::BeginGraph(const char* title, const ImVec2& size_arg)
 	ImGui::BeginChild(title, Size, 0, ImGuiWindowFlags_NoScrollbar);
 	ImGui::PopStyleColor();
 
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2{ Style.ItemSpacing, Style.ItemSpacing } * Camera.Scale);
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ Style.ItemSpacing, Style.ItemSpacing } * Camera.Scale);
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ Style.NodePadding, Style.NodePadding } * Camera.Scale);
 	DrawGrid({ Graph->Pos, Graph->Pos + Graph->Size });
 }
 
@@ -648,12 +735,26 @@ void ImNodeGraph::EndGraph()
 
 	GraphBehaviour({ Graph->Pos, Graph->Pos + Graph->Size });
 
+	ImGui::PopStyleVar(3);
 	ImGui::PopFont();
 	ImGui::EndChild();
 
 	// Update State
 	G.CurrentGraph = nullptr;
 	G.Scope        = ImNodeGraphScope_None;
+}
+
+float ImNodeGraph::GetCameraScale()
+{
+    // Validate global state
+    IM_ASSERT(GImGuiNodes != nullptr);
+    ImNodeGraphContext&  G = *GImGuiNodes;
+
+    // Validate graph state
+    ImNodeGraphData* Graph = G.CurrentGraph;
+    IM_ASSERT(G.Scope != ImNodeGraphScope_None && Graph != nullptr); // Ensure we are in the scope of a graph
+
+    return Graph->Camera.Scale;
 }
 
 
@@ -664,7 +765,6 @@ void ImNodeGraph::BeginNode(ImGuiID id, ImVec2& pos)
 	IM_ASSERT(GImGuiNodes != nullptr);
 
 	// Validate State
-	ImGuiContext&       Ctx = *ImGui::GetCurrentContext();
 	ImNodeGraphContext&   G = *GImGuiNodes;
 	ImNodeGraphData*  Graph =  G.CurrentGraph;
 	IM_ASSERT(G.Scope == ImNodeGraphScope_Graph && Graph != nullptr); // Ensure we are in the scope of a graph
@@ -679,6 +779,7 @@ void ImNodeGraph::BeginNode(ImGuiID id, ImVec2& pos)
 	// Update node vars
 	Node.InputPins.Cleanup();  Node.InputPins.Reset();
 	Node.OutputPins.Cleanup(); Node.OutputPins.Reset();
+	Node.Header.Reset();
 	pos = Node.Root;
 
 	// Push Scope
@@ -721,12 +822,133 @@ void ImNodeGraph::EndNode()
 	// Pop Scope
 	G.Scope = ImNodeGraphScope_Graph;
 	Graph->CurrentNode = nullptr;
+
+	// fix up header width
+	if(Node.Header())
+	{
+		Node.Header->ScreenBounds.Min.x = Node.ScreenBounds.Min.x;
+		Node.Header->ScreenBounds.Max.x = Node.ScreenBounds.Max.x;
+	}
+
+	// Fixup pins
+	float Width  = 0;
+	auto  Input  = Node.InputPins.begin();
+	auto  Output = Node.OutputPins.begin();
+	const auto InputEnd = Node.InputPins.end();
+	const auto OutputEnd = Node.OutputPins.end();
+
+	while(Input != InputEnd || Output != OutputEnd)
+	{
+		float iWidth =  Input != InputEnd  ? Input->ScreenBounds.GetWidth() : 0;
+		float oWidth = Output != OutputEnd ? Output->ScreenBounds.GetWidth() : 0;
+		Width = ImMax(Width, iWidth + oWidth);
+
+		if(Input  != InputEnd)  ++Input;
+		if(Output != OutputEnd) ++Output;
+	}
+
+	Input      = Node.InputPins.begin();
+	Output     = Node.OutputPins.begin();
+	float Y    = Node.Header->ScreenBounds.Max.y + Style.NodePadding * Camera.Scale;
+	float InX  = Node.ScreenBounds.Min.x + Style.NodePadding * Camera.Scale;
+
+	while(Input != InputEnd || Output != OutputEnd)
+	{
+		float Step = 0.0f;
+		if(Input != InputEnd)
+		{
+			Input->Pos = { InX, Y };
+			Step = ImMax(Step, Input->ScreenBounds.GetHeight());
+			++Input;
+		}
+
+		if(Output != OutputEnd)
+		{
+			float OutX = InX + Width - Output->ScreenBounds.GetWidth();
+			Output->Pos = { OutX, Y };
+			Step = ImMax(Step, Output->ScreenBounds.GetHeight());
+			++Output;
+		}
+
+		Y += Step + Style.ItemSpacing;
+	}
+}
+
+void ImNodeGraph::BeginNodeHeader(ImGuiID id, ImColor color)
+{
+	// Validate global state
+	IM_ASSERT(GImGuiNodes != nullptr);
+
+	// Validate Graph state
+	ImNodeGraphContext&   G = *GImGuiNodes;
+	ImNodeGraphData*  Graph =  G.CurrentGraph;
+	IM_ASSERT(Graph != nullptr);
+
+	// Validate node scope
+	ImNodeData* Node = Graph->CurrentNode;
+	IM_ASSERT(G.Scope == ImNodeGraphScope_Node && Node != nullptr); // Ensure we are in the scope of a node
+	IM_ASSERT(Node->Header() == false); // Ensure there is only one header
+
+	// Setup header
+	Node->Header = ImNodeHeaderData{
+		Node
+	,   color
+	};
+
+	// Create group
+	ImGui::PushID(static_cast<int>(id));
+	ImGui::BeginGroup();
+
+	// Push scope
+	G.Scope = ImNodeGraphScope_NodeHeader;
+}
+
+void ImNodeGraph::EndNodeHeader()
+{
+	// Validate global state
+	IM_ASSERT(GImGuiNodes != nullptr);
+
+	// Validate Graph state
+	ImNodeGraphContext&   G = *GImGuiNodes;
+	ImNodeGraphData*  Graph =  G.CurrentGraph;
+	IM_ASSERT(Graph != nullptr);
+
+	// Validate node scope
+	ImNodeData* Node = Graph->CurrentNode;
+	IM_ASSERT(G.Scope == ImNodeGraphScope_NodeHeader && Node != nullptr); // Ensure we are in the scope of a node
+	IM_ASSERT(Node->Header()); // Ensure the header is valid
+
+	// End Group
+	ImGui::EndGroup();
+	ImGui::PopID();
+
+	const ImNodeGraphStyle& Style = Graph->Style;
+	const ImGraphCamera&   Camera = Graph->Camera;
+	Node->Header->ScreenBounds = { ImGui::GetItemRectMin(), ImGui::GetItemRectMax() };
+	Node->Header->ScreenBounds.Expand(Style.NodePadding * Camera.Scale);
+
+	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + Style.NodePadding * Camera.Scale);
+
+	G.Scope = ImNodeGraphScope_Node;
+}
+
+void ImNodeGraph::SetPinColors(const ImColor *colors)
+{
+	// Validate global state
+	IM_ASSERT(GImGuiNodes != nullptr);
+
+	ImNodeGraphContext&   G = *GImGuiNodes;
+	ImNodeGraphData*  Graph =  G.CurrentGraph;
+	IM_ASSERT(Graph != nullptr);
+
+	Graph->Style.PinColors = colors;
 }
 
 void ImNodeGraph::BeginPin(ImGuiID id, ImPinType type, ImPinDirection direction, ImPinFlags flags)
 {
 	// Validate global state
 	IM_ASSERT(GImGuiNodes != nullptr);
+
 
 	// Validate Graph state
 	ImNodeGraphContext&   G = *GImGuiNodes;
@@ -741,17 +963,34 @@ void ImNodeGraph::BeginPin(ImGuiID id, ImPinType type, ImPinDirection direction,
 	ImPinData& Pin = (direction ? Node->OutputPins[id] : Node->InputPins[id]);
 	Graph->CurrentPin = &Pin;
 
+	// Setup pin on first frame
 	if(Pin.Node == nullptr)
 	{
 		Pin.Node = Node;
+		Pin.ID   = id;
 		Pin.Type = type;
 		Pin.Direction = direction;
 		Pin.Flags = flags;
 	}
-	ImGui::PushID(static_cast<int>(id));
 
+	// Setup ImGui Group
+	ImGui::PushID(static_cast<int>(id));
 	ImGui::BeginGroup();
-	ImGui::SetCursorScreenPos(Graph->CurrentPin->Pos); // The first frame the node will be completely garbled
+	ImGui::SetCursorScreenPos(Pin.Pos); // The first frame the node will be completely garbled
+
+	// Push Scope
+	G.Scope = ImNodeGraphScope_Pin;
+
+	if(!Pin.Direction)
+	{
+	    DrawPinHead(Pin);
+	    ImGui::SameLine();
+	}
+    else
+    {
+        DummyPinHead(Pin); // Guess this counts as padding
+        ImGui::SameLine();
+    }
 }
 
 void ImNodeGraph::EndPin()
@@ -766,10 +1005,78 @@ void ImNodeGraph::EndPin()
 
 	// Validate pin scope
 	ImPinData* Pin = Graph->CurrentPin;
-	IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
+
+    if(Pin->Direction)
+    {
+        ImGui::SameLine();
+        DrawPinHead(*Pin);
+    }
 
 	ImGui::EndGroup();
 	ImGui::PopID();
 
 	Pin->ScreenBounds = { ImGui::GetItemRectMin(), ImGui::GetItemRectMax() };
+
+	// Pop Scope
+	G.Scope = ImNodeGraphScope_Node;
+}
+
+
+// =====================================================================================================================
+// ImGui Extensions
+// =====================================================================================================================
+
+
+bool ImGui::RadioButton(const char *label, bool active, float radius)
+{
+	ImGuiWindow* window = GetCurrentWindow();
+	if (window->SkipItems)
+		return false;
+
+	ImGuiContext& g = *GImGui;
+	const ImGuiStyle& style = g.Style;
+	const ImGuiID id = window->GetID(label);
+	const ImVec2 label_size = CalcTextSize(label, NULL, true);
+
+	const float square_sz = GetFrameHeight();
+	const ImVec2 pos = window->DC.CursorPos;
+	const ImRect check_bb(pos, pos + ImVec2(square_sz, square_sz));
+	const ImRect total_bb(pos, pos + ImVec2(square_sz + (label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f), label_size.y + style.FramePadding.y * 2.0f));
+	ItemSize(total_bb, style.FramePadding.y);
+	if (!ItemAdd(total_bb, id))
+		return false;
+
+	ImVec2 center = check_bb.GetCenter();
+	center.x = IM_ROUND(center.x);
+	center.y = IM_ROUND(center.y);
+
+	bool hovered, held;
+	bool pressed = ButtonBehavior(total_bb, id, &hovered, &held);
+	if (pressed)
+		MarkItemEdited(id);
+
+	RenderNavHighlight(total_bb, id);
+	const int num_segment = window->DrawList->_CalcCircleAutoSegmentCount(radius);
+	window->DrawList->AddCircleFilled(center, radius, GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), num_segment);
+	if (active)
+	{
+		const float pad = ImMax(1.0f, IM_TRUNC(square_sz / 6.0f));
+		window->DrawList->AddCircleFilled(center, radius - pad, GetColorU32(ImGuiCol_CheckMark));
+	}
+
+	if (style.FrameBorderSize > 0.0f)
+	{
+		window->DrawList->AddCircle(center + ImVec2(1, 1), radius, GetColorU32(ImGuiCol_BorderShadow), num_segment, style.FrameBorderSize);
+		window->DrawList->AddCircle(center, radius, GetColorU32(ImGuiCol_Border), num_segment, style.FrameBorderSize);
+	}
+
+	ImVec2 label_pos = ImVec2(check_bb.Max.x + style.ItemInnerSpacing.x, check_bb.Min.y + style.FramePadding.y);
+	if (g.LogEnabled)
+		LogRenderedText(&label_pos, active ? "(x)" : "( )");
+	if (label_size.x > 0.0f)
+		RenderText(label_pos, label);
+
+	IMGUI_TEST_ENGINE_ITEM_INFO(id, label, g.LastItemData.StatusFlags);
+	return pressed;
 }

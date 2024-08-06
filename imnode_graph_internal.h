@@ -19,6 +19,8 @@
 #include "imnode_graph.h"
 #include <imgui-docking/imgui_internal.h>
 
+#include "open-cpp-utils/optional.h"
+
 // =====================================================================================================================
 // Type & Forward Definitions
 // =====================================================================================================================
@@ -30,7 +32,9 @@ using ImNodeGraphScope = int;
 struct ImNodeGraphContext;
 struct ImNodeGraphData;
 template<typename T> struct ImObjectPool;
+template<typename T> struct ImOptional;
 struct ImNodeData;
+struct ImNodeHeaderData;
 struct ImPinData;
 struct ImRect;
 
@@ -43,6 +47,7 @@ enum ImNodeGraphScope_
 	ImNodeGraphScope_None = 0
 ,   ImNodeGraphScope_Graph
 ,   ImNodeGraphScope_Node
+,   ImNodeGraphScope_NodeHeader
 ,   ImNodeGraphScope_Pin
 };
 
@@ -51,14 +56,53 @@ enum ImNodeGraphScope_
 // Data Structures
 // =====================================================================================================================
 
+template<typename T>
+struct ImOptional
+{
+    using value_type      = T;
+    using reference       = T&;
+    using const_reference = const T&;
+
+    T    Value;
+    bool Set;
+
+    ImOptional() : Value(), Set(false) { }
+    ImOptional(const T& value) : Value(value), Set(true) { }
+    ImOptional(const ImOptional&) = default;
+    ImOptional(ImOptional&&) = default;
+
+    ImOptional& operator=(const ImOptional& other) = default;
+    ImOptional& operator=(ImOptional&& other) = default;
+
+    ImOptional& operator=(const T& value) { Value = value; Set = true; return *this; }
+    ImOptional& operator=(T&& value)      { Value = value; Set = true; return *this; }
+
+    operator       T&()       { IM_ASSERT(Set); return Value; }
+    operator const T&() const { IM_ASSERT(Set); return Value; }
+
+          T* operator->()       { IM_ASSERT(Set); return &Value; }
+    const T* operator->() const { IM_ASSERT(Set); return &Value; }
+
+    bool operator()() const { return Set; }
+
+    void Reset() { Set = false; }
+};
+
 /**
  * \brief Data Structure for holding a pool of objects
  */
 template<typename T>
 struct ImObjectPool
 {
+    friend class iterator;
+
 	static constexpr int nullidx = -1;
-	using value_type = T;
+	using value_type      = T;
+    using reference       = T&;
+    using const_reference = const T&;
+    using pointer         = T*;
+    using const_pointer   = const T*;
+    using iterator_type   = iterator;
 
 	ImVector<T>       Data;
 	ImVector<bool>    Active;
@@ -85,6 +129,30 @@ struct ImObjectPool
 	T& operator[](int idx) { IM_ASSERT(idx >= 0 && idx < Data.Size); return Data[idx]; }
 	const T& operator[](int idx) const { IM_ASSERT(idx >= 0 && idx < Data.Size); return Data[idx]; }
 	bool operator()(int idx) const { IM_ASSERT(idx >= 0 && idx < Data.Size); return Active[idx]; }
+
+
+    class iterator
+	{
+	public:
+	    iterator(ImObjectPool& pool, int idx);
+
+	    iterator& operator++();
+	    iterator  operator++(int);
+
+	    bool operator==(const iterator&) const = default;
+	    bool operator!=(const iterator&) const = default;
+
+	    reference operator*()  const { return (*pool_)[idx_]; }
+	    pointer   operator->() const { return &(*pool_)[idx_]; }
+
+	private:
+	    ImObjectPool* pool_;
+	    int           idx_;
+	};
+
+    iterator begin() { return iterator(*this, 0); }
+    iterator end()   { return iterator(*this, Active.size()); }
+
 
 private:
 	int _GetNextIndex(ImGuiID id);
@@ -127,11 +195,19 @@ struct ImNodeGraphData
 	ImObjectPool<ImNodeData> Nodes;
     ImNodeData*              CurrentNode;
 	ImPinData*               CurrentPin;
+    ImPinPtr                 FocusedPin; // For dragging pins
     int                      SubmitCount;
 
     ImNodeGraphData(ImNodeGraphContext* ctx, const char* name);
 
     [[nodiscard]] ImVec2 GetCenter() const { return Pos + Size * 0.5; }
+};
+
+struct ImNodeHeaderData
+{
+    ImNodeData* Node;
+    ImColor     Color;
+    ImRect      ScreenBounds;
 };
 
 /**
@@ -145,8 +221,9 @@ struct ImNodeData
     ImRect           ScreenBounds;
     int              BgChannelIndex, FgChannelIndex;
 
-    ImObjectPool<ImPinData> InputPins;
-	ImObjectPool<ImPinData> OutputPins;
+    ImOptional<ImNodeHeaderData> Header;
+    ImObjectPool<ImPinData>      InputPins;
+	ImObjectPool<ImPinData>      OutputPins;
 
 	ImNodeData();
 	ImNodeData(const ImNodeData&);
@@ -160,23 +237,36 @@ struct ImNodeData
  */
 struct ImPinData
 {
-    ImNodeData*    Node;
-    ImPinType      Type;
-    ImPinDirection Direction;
-    ImPinFlags     Flags;
-	ImVec2         Pos;
-	ImRect         ScreenBounds;
+    // Pin Info
+    ImNodeData*        Node;
+    ImGuiID            ID;
+    ImPinType          Type;
+    ImPinDirection     Direction;
+    ImPinFlags         Flags;
+	ImVec2             Pos;
+	ImRect             ScreenBounds;
+    ImVector<ImPinPtr> Connections;
+
+    // Input
+    bool Hovered;
 
 	ImPinData();
 	ImPinData(const ImPinData&) = default;
 	~ImPinData() = default;
 
 	ImPinData& operator=(const ImPinData&) = default;
+
+    operator ImPinPtr() const { return { Node->ID, ID, Direction }; }
 };
 
 // =====================================================================================================================
 // Functionality
 // =====================================================================================================================
+
+namespace ImGui
+{
+    bool RadioButton(const char* label, bool active, float radius);
+}
 
 namespace ImNodeGraph
 {
@@ -213,6 +303,11 @@ namespace ImNodeGraph
 // Nodes ---------------------------------------------------------------------------------------------------------------
 
     void             DrawNode(ImNodeData& node);
+
+// Pins ----------------------------------------------------------------------------------------------------------------
+
+    void             DrawPinHead(ImPinData& pin);
+    void             DummyPinHead(ImPinData& pin);
 }
 
 // =====================================================================================================================
@@ -277,6 +372,31 @@ void ImObjectPool<T>::_PushBack(ImGuiID id)
 	Data.push_back(T());
 	Active.push_back(true);
 	ID.push_back(id);
+}
+
+template<typename T>
+ImObjectPool<T>::iterator::iterator(ImObjectPool &pool, int idx)
+    : pool_(&pool)
+    , idx_(idx)
+{
+    while(idx_ < pool_->Size() && !(*pool_)(idx_)) ++idx_;
+}
+
+template<typename T>
+typename ImObjectPool<T>::iterator & ImObjectPool<T>::iterator::operator++()
+{
+    ++idx_;
+    while(idx_ < pool_->Size() && !(*pool_)(idx_)) ++idx_;
+    return *this;
+}
+
+template<typename T>
+typename ImObjectPool<T>::iterator ImObjectPool<T>::iterator::operator++(int)
+{
+    iterator retval = *this;
+    ++idx_;
+    while(idx_ < pool_->Size() && !(*pool_)(idx_)) ++idx_;
+    return *this;
 }
 
 #endif //IMGUI_NODES_INTERNAL_H
