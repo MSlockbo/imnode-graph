@@ -58,6 +58,11 @@ enum ImNodeGraphColor_
 ,	ImNodeGraphColor_GridSecondaryLines
 
 ,	ImNodeGraphColor_NodeBackground
+,	ImNodeGraphColor_NodeHoveredBackground
+,	ImNodeGraphColor_NodeActiveBackground
+,	ImNodeGraphColor_NodeHeaderColor
+,	ImNodeGraphColor_NodeHeaderHoveredColor
+,	ImNodeGraphColor_NodeHeaderActiveColor
 ,	ImNodeGraphColor_NodeOutline
 ,	ImNodeGraphColor_NodeOutlineSelected
 
@@ -103,21 +108,22 @@ struct ImNodeGraphStyle
 	float NodeOutlineThickness;
 	float NodeOutlineSelectedThickness;
 
-	float SelectRegionOutlineThickness;
+    float SelectRegionRounding;
+    float SelectRegionOutlineThickness;
 
-	float ItemSpacing;
+    float ItemSpacing;
     float PinRadius;
 	float PinOutlineThickness;
 
     float ConnectionThickness;
 
-	ImColor Colors[ImNodeGraphColor_COUNT];
+	ImColor        Colors[ImNodeGraphColor_COUNT];
 	const ImColor* PinColors;
 
 	ImNodeGraphStyle();
 	ImNodeGraphStyle(const ImNodeGraphStyle&) = default;
 
-    ImU32 GetColorU32(ImNodeGraphColor idx)   const { return Colors[idx]; }
+    ImU32  GetColorU32(ImNodeGraphColor idx)  const { return Colors[idx]; }
     ImVec4 GetColorVec4(ImNodeGraphColor idx) const { return Colors[idx]; }
 };
 
@@ -205,7 +211,7 @@ namespace ImNodeGraph
 	void BeginNode(ImGuiID id, ImVec2& pos);
 	void EndNode();
 
-    void BeginNodeHeader(ImGuiID id, ImColor color);
+    void BeginNodeHeader(ImGuiID id, ImColor color, ImColor hovered, ImColor active);
     void EndNodeHeader();
 
 
