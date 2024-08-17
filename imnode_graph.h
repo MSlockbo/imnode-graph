@@ -83,6 +83,7 @@ enum ImPinDirection_
 enum ImPinFlags_
 {
 	ImPinFlags_None = 0
+,   ImPinFlags_NoPadding = 1
 };
 
 // =====================================================================================================================
@@ -200,6 +201,18 @@ namespace ImNodeGraph
 
     float GetCameraScale();
 
+    ImVec2 GridToWindow(const ImVec2& pos);
+    ImVec2 WindowToScreen(const ImVec2& pos);
+    ImVec2 GridToScreen(const ImVec2& pos);
+
+    ImVec2 ScreenToGrid(const ImVec2& pos);
+    ImVec2 ScreenToWindow(const ImVec2& pos);
+    ImVec2 WindowToGrid(const ImVec2& pos);
+
+    ImVec2 SnapToGrid(const ImVec2& pos);
+
+    void PushItemWidth(float width);
+
 
 // Nodes ---------------------------------------------------------------------------------------------------------------
 
@@ -208,10 +221,12 @@ namespace ImNodeGraph
 	 * \param title Title of the node
 	 * \return False if the node is collapsed
 	 */
-	void BeginNode(ImGuiID id, ImVec2& pos);
+	void BeginNode(const char* title, ImVec2& pos);
+	void BeginNode(int id, ImVec2& pos);
 	void EndNode();
 
-    void BeginNodeHeader(ImGuiID id, ImColor color, ImColor hovered, ImColor active);
+    void BeginNodeHeader(const char* title, ImColor color, ImColor hovered, ImColor active);
+    void BeginNodeHeader(int id, ImColor color, ImColor hovered, ImColor active);
     void EndNodeHeader();
 
 
@@ -231,8 +246,11 @@ namespace ImNodeGraph
 	 * \param direction Direction of the pin
 	 * \param userData Data associated with the node, used for attribute callback
 	 */
-	void BeginPin(ImGuiID id, ImPinType type, ImPinDirection direction, ImPinFlags flags = 0);
+	void BeginPin(const char* title, ImPinType type, ImPinDirection direction, ImPinFlags flags = 0);
+	void BeginPin(int id, ImPinType type, ImPinDirection direction, ImPinFlags flags = 0);
 	void EndPin();
+
+    bool IsPinConnected();
 }
 
 #endif //IMGUI_NODES_H

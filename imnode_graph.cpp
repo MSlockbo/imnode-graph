@@ -331,6 +331,7 @@ void ImNodeGraph::GraphBehaviour(const ImRect& grid_bounds)
 	    Graph.Dragging = false;
 	}
 
+    // Dragging Nodes & Region Select
     if(ImGui::IsMouseDragging(ImGuiMouseButton_Left))
     {
         if(Graph.FocusedNode())
@@ -344,6 +345,7 @@ void ImNodeGraph::GraphBehaviour(const ImRect& grid_bounds)
             for(ImGuiID node : Graph.Selected)
             {
                 Nodes[node].Root = mouse - Nodes[node].DragOffset;
+                if(IO.KeyMods == ImGuiMod_Alt) Nodes[node].Root = SnapToGrid(Nodes[node].Root);
             }
             Graph.Dragging = true;
         }
@@ -484,6 +486,28 @@ ImVec2 ImNodeGraph::WindowToGrid(const ImVec2 &pos)
 	ImNodeGraphData&  Graph = *G.CurrentGraph;
 
 	return ScreenToGrid(Graph.Pos + pos);
+}
+
+ImVec2 ImNodeGraph::SnapToGrid(const ImVec2 &pos)
+{
+    // Draw the grid
+    ImGuiWindow& DrawWindow = *ImGui::GetCurrentWindow();
+    ImDrawList&    DrawList = *DrawWindow.DrawList;
+    ImNodeGraphData&  Graph = *GImNodeGraph->CurrentGraph;
+    ImNodeGraphStyle& Style =  Graph.Style;
+    ImGraphCamera&   Camera =  Graph.Camera;
+
+    const float GridSecondarySize = ImGui::GetFontSize() / Camera.Scale;
+
+    return ImFloor(pos / GridSecondarySize) * GridSecondarySize;
+}
+
+void ImNodeGraph::PushItemWidth(float width)
+{
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData&  Graph = *G.CurrentGraph;
+
+    ImGui::PushItemWidth(Graph.Camera.Scale * width);
 }
 
 int ImNodeGraph::PushChannels(int count)
@@ -697,11 +721,6 @@ bool ImNodeGraph::NodeBehaviour(ImNodeData& Node)
 
     bool is_focus   = Graph.FocusedNode == Node;
 
-	//Node.Hovered  =  hovering; // Whether mouse is over node
-    //Node.Hovered &= !Graph.HoveredNode() || is_hovered; // Check if a node later in the draw order is hovered
-    //Node.Hovered &= !Graph.FocusedNode() || is_focus;   // Chech if another node is focused
-    //Node.Hovered &= !Graph.SelectRegionStart(); // Check for drag selection
-
     if(Node.Hovered) Graph.HoveredNode = Node;
     if(Node.Hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
     {
@@ -757,12 +776,12 @@ void ImNodeGraph::PinHead(ImGuiID id, ImPinData& Pin)
 	const float outline = Style.PinOutlineThickness * Camera.Scale;
 
     // Behaviour
-    bool pressed = false, filled = false;
+    bool pressed = false, filled = !Pin.Connections.empty();
     if(ImGui::IsWindowFocused())
     {
         Pin.Hovered = ImGui::IsMouseHoveringRect(check_bb.Min, check_bb.Max);
         pressed = (Pin.Hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left));
-        filled = (Pin.Hovered || !Pin.Connections.empty() || Graph.NewConnection == Pin);
+        filled |= (Pin.Hovered || Graph.NewConnection == Pin);
 
         // Start new connection when left clicked
         if(Pin.Hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyModKeyDown())
@@ -795,7 +814,7 @@ void ImNodeGraph::PinHead(ImGuiID id, ImPinData& Pin)
 	PinColor = PinColor * (pressed ? 0.8f : 1.0f);
 	ImVec4 FillColor = filled ? PinColor : Style.GetColorVec4(ImNodeGraphColor_PinBackground);
 
-	if(pressed)
+	if(pressed || filled)
 	{
 		DrawList.AddCircleFilled(Pin.Center, radius + outline * 0.5f, ImGui::ColorConvertFloat4ToU32(FillColor));
 	}
@@ -1433,7 +1452,49 @@ float ImNodeGraph::GetCameraScale()
 
 // Node ----------------------------------------------------------------------------------------------------------------
 
-void ImNodeGraph::BeginNode(ImGuiID id, ImVec2& pos)
+void ImNodeGraph::BeginNode(const char* title, ImVec2& pos)
+{
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate State
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Graph && Graph != nullptr); // Ensure we are in the scope of a graph
+
+    // Get Node
+    ImGuiID id = ImGui::GetCurrentWindow()->GetID(title);
+    ImNodeData& Node = Graph->Nodes[id];
+    if(Node.Graph == nullptr) { Node.Graph = Graph; Node.Root = pos; Node.ID = id; }
+
+    // Style
+    const ImNodeGraphStyle& Style = Graph->Style;
+
+    // Update node vars
+    Node.InputPins.Cleanup();  Node.InputPins.Reset();
+    Node.OutputPins.Cleanup(); Node.OutputPins.Reset();
+    Node.Header.Reset();
+    pos = Node.Root;
+
+    // Push Scope
+    Graph->CurrentNode = &Node;
+    Graph->SubmitCount ++;
+    G.Scope = ImNodeGraphScope_Node;
+
+    // Push new draw channels
+    Node.BgChannelIndex = PushChannels(2);
+    Node.FgChannelIndex = Node.BgChannelIndex + 1;
+    SetChannel(Node.FgChannelIndex);
+
+    // Setup Node Group
+    ImGui::SetCursorScreenPos(GridToScreen(pos + ImVec2(Style.NodePadding, Style.NodePadding)));
+    ImGui::BeginGroup();
+    ImGui::PushID(static_cast<int>(id));
+
+    ImGuiContext& Ctx = *ImGui::GetCurrentContext();
+    Node.PrevActiveItem = Ctx.ActiveId;
+}
+
+void ImNodeGraph::BeginNode(int iid, ImVec2& pos)
 {
 	IM_ASSERT(GImNodeGraph != nullptr);
 
@@ -1443,6 +1504,7 @@ void ImNodeGraph::BeginNode(ImGuiID id, ImVec2& pos)
 	IM_ASSERT(G.Scope == ImNodeGraphScope_Graph && Graph != nullptr); // Ensure we are in the scope of a graph
 
 	// Get Node
+    ImGuiID id = ImGui::GetCurrentWindow()->GetID(iid);
 	ImNodeData& Node = Graph->Nodes[id];
 	if(Node.Graph == nullptr) { Node.Graph = Graph; Node.Root = pos; Node.ID = id; }
 
@@ -1502,7 +1564,7 @@ void ImNodeGraph::EndNode()
 	Node.ScreenBounds = { ImGui::GetItemRectMin(), ImGui::GetItemRectMax() };
     Node.ScreenBounds.Expand(Style.NodePadding * Camera.Scale);
 
-    bool hovering   = ImGui::IsItemHovered() && !other_hovered;
+    bool hovering   = ImGui::IsMouseHoveringRect(Node.ScreenBounds.Min, Node.ScreenBounds.Max) && !other_hovered;
     bool is_focus   = Graph->FocusedNode == Node;
     bool is_hovered = Graph->HoveredNode == Node;
 
@@ -1566,7 +1628,40 @@ void ImNodeGraph::EndNode()
 	}
 }
 
-void ImNodeGraph::BeginNodeHeader(ImGuiID id, ImColor color, ImColor hovered, ImColor active)
+void ImNodeGraph::BeginNodeHeader(const char *title, ImColor color, ImColor hovered, ImColor active)
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    // Validate node scope
+    ImNodeData* Node = Graph->CurrentNode;
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Node && Node != nullptr); // Ensure we are in the scope of a node
+    IM_ASSERT(Node->Header() == false); // Ensure there is only one header
+
+    if(Node->Hovered) color = hovered;
+    if(Node->Active)  color = active;
+
+    // Setup header
+    Node->Header = ImNodeHeaderData{
+        Node
+    ,   color
+    ,   ImRect()
+    };
+
+    // Create group
+    ImGui::BeginGroup();
+    ImGui::PushID(title);
+
+    // Push scope
+    G.Scope = ImNodeGraphScope_NodeHeader;
+}
+
+void ImNodeGraph::BeginNodeHeader(int id, ImColor color, ImColor hovered, ImColor active)
 {
 	// Validate global state
 	IM_ASSERT(GImNodeGraph != nullptr);
@@ -1593,7 +1688,7 @@ void ImNodeGraph::BeginNodeHeader(ImGuiID id, ImColor color, ImColor hovered, Im
 
 	// Create group
     ImGui::BeginGroup();
-    ImGui::PushID(static_cast<int>(id));
+    ImGui::PushID(id);
 
     // Push scope
 	G.Scope = ImNodeGraphScope_NodeHeader;
@@ -1640,7 +1735,54 @@ void ImNodeGraph::SetPinColors(const ImColor *colors)
 	Graph->Style.PinColors = colors;
 }
 
-void ImNodeGraph::BeginPin(ImGuiID id, ImPinType type, ImPinDirection direction, ImPinFlags flags)
+void ImNodeGraph::BeginPin(const char *title, ImPinType type, ImPinDirection direction, ImPinFlags flags)
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    // Validate node scope
+    ImNodeData* Node = Graph->CurrentNode;
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Node && Node != nullptr); // Ensure we are in the scope of a node
+
+    // Push the pin
+    ImGuiID id = ImGui::GetCurrentWindow()->GetID(title);
+    ImPinData& Pin = (direction ? Node->OutputPins[id] : Node->InputPins[id]);
+    Graph->CurrentPin = &Pin;
+
+    // Setup pin
+    Pin.Node = Node->ID;
+    Pin.ID   = id;
+    Pin.Type = type;
+    Pin.Direction = direction;
+    Pin.Flags = flags;
+
+    // Setup ImGui Group
+    ImGui::BeginGroup();
+    ImGui::PushID(static_cast<int>(id));
+    ImGui::SetCursorScreenPos(Pin.Pos); // The first frame the node will be completely garbled
+
+    // Push Scope
+    G.Scope = ImNodeGraphScope_Pin;
+
+    if(!Pin.Direction)
+    {
+        PinHead(id, Pin);
+        ImGui::SameLine();
+    }
+    else if(!(flags & ImPinFlags_NoPadding))
+    {
+        DummyPinHead(Pin); // Guess this counts as padding
+        ImGui::SameLine();
+    }
+}
+
+void ImNodeGraph::BeginPin(int iid, ImPinType type, ImPinDirection direction, ImPinFlags flags)
 {
 	// Validate global state
 	IM_ASSERT(GImNodeGraph != nullptr);
@@ -1656,6 +1798,7 @@ void ImNodeGraph::BeginPin(ImGuiID id, ImPinType type, ImPinDirection direction,
 	IM_ASSERT(G.Scope == ImNodeGraphScope_Node && Node != nullptr); // Ensure we are in the scope of a node
 
 	// Push the pin
+    ImGuiID id = ImGui::GetCurrentWindow()->GetID(iid);
 	ImPinData& Pin = (direction ? Node->OutputPins[id] : Node->InputPins[id]);
 	Graph->CurrentPin = &Pin;
 
@@ -1679,7 +1822,7 @@ void ImNodeGraph::BeginPin(ImGuiID id, ImPinType type, ImPinDirection direction,
 		PinHead(id, Pin);
 		ImGui::SameLine();
 	}
-	else
+	else if(!(flags & ImPinFlags_NoPadding))
 	{
 		DummyPinHead(Pin); // Guess this counts as padding
 		ImGui::SameLine();
@@ -1713,4 +1856,21 @@ void ImNodeGraph::EndPin()
 
 	// Pop Scope
 	G.Scope = ImNodeGraphScope_Node;
+}
+
+bool ImNodeGraph::IsPinConnected()
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    // Validate pin scope
+    ImPinData* Pin = Graph->CurrentPin;
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
+
+    return Pin->Connections.empty() == false;
 }

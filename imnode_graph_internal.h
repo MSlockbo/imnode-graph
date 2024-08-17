@@ -60,6 +60,21 @@ enum ImNodeGraphScope_
 
 bool ImAABB(const ImRect& a, const ImRect& b);
 
+template<typename T>
+T ImIsPrime(T x)
+{
+    if(x <= 1)                   return false;
+    if(x == 2     || x == 3)     return true;
+    if(x % 2 == 0 || x % 3 == 0) return false;
+
+    uint64_t limit = static_cast<uint64_t>(ImSqrt(static_cast<float>(x)));
+    for(T i = 5; i <= limit; i += 6)
+    {
+        if(x % i == 0 || x % (i + 2) == 0) return false;
+    }
+
+    return true;
+}
 
 // =====================================================================================================================
 // Data Structures
@@ -79,7 +94,7 @@ struct ImOptional
     T    Value;
     bool Set;
 
-    ImOptional() : Value(), Set(false) { }
+    ImOptional() : Set(false) { }
     ImOptional(const T& value) : Value(value), Set(true) { }
     ImOptional(const ImOptional&) = default;
     ImOptional(ImOptional&&)      = default;
@@ -154,6 +169,7 @@ struct ImDeque
     const T& Back() const  { IM_ASSERT(Last);  return Last->Value; }
 };
 
+
 #ifndef IMSET_MIN_CAPACITY
 #define IMSET_MIN_CAPACITY 7 // Should be prime and >= 5
 #endif
@@ -170,7 +186,7 @@ inline size_t ImHash<uint64_t>(uint64_t x) noexcept
     x *= UINT64_C(0xc4ceb9fe1a85ec53);
     x ^= x >> 33U;
 
-    return static_cast<size_t>(x);
+    return x;
 }
 
 template<> inline size_t ImHash<int>(int x)         noexcept { return ImHash(static_cast<uint64_t>(x)); }
@@ -675,14 +691,6 @@ namespace ImNodeGraph
     void             SwapChannel(ImDrawChannel& a, ImDrawChannel& b);
     void             SortChannels();
 
-    ImVec2           GridToWindow(const ImVec2& pos);
-    ImVec2           WindowToScreen(const ImVec2& pos);
-    ImVec2           GridToScreen(const ImVec2& pos);
-
-    ImVec2           ScreenToGrid(const ImVec2& pos);
-    ImVec2           ScreenToWindow(const ImVec2& pos);
-    ImVec2           WindowToGrid(const ImVec2& pos);
-
 // Nodes ---------------------------------------------------------------------------------------------------------------
 
     void             DrawNode(ImNodeData& node);
@@ -903,7 +911,7 @@ void ImSet<T>::_IncreaseCapacity()
     Node* old = Table;
     int old_capacity = Capacity;
     Capacity = _NextPrime(Capacity);
-    Table = reinterpret_cast<Node*>(IM_ALLOC(Capacity * sizeof(Node)));
+    Table = static_cast<Node*>(IM_ALLOC(Capacity * sizeof(Node)));
     memset(Table, 0, Capacity * sizeof(Node));
     Size = 0;
 
@@ -918,29 +926,31 @@ void ImSet<T>::_IncreaseCapacity()
 template<typename T>
 int ImSet<T>::_NextPrime(int x)
 {
-    // Integer division will floor both +/- case
-    // (x + 1) / 6 * 2
-    int n = (x + 1) / 3;
+    int n = (x + 1) / 6;
+    n *= 2;
 
-    // If my math is correct, any number in the sequence will be divisible by 5 or 7
-    x = n * 6 - 1;
-    if(x % 5 == 0 || x % 7 == 0) x = n * x + 1;
-    x = ImMax(x, IMSET_MIN_CAPACITY);
-    return x;
+    while(true)
+    {
+        x = (n * 6) - 1;
+        if(!ImIsPrime(x)) x = (n * 6) + 1;
+        if(!ImIsPrime(x)) { ++n; continue; }
+        return ImMax(x, IMSET_MIN_CAPACITY);
+    }
 }
 
 template<typename T>
 int ImSet<T>::_PrevPrime(int x)
 {
-    // Integer division will floor both +/- case with + 1
-    // (x + 1) / 6 / 2
-    int n = (x + 1) / 12;
+    int n = (x + 1) / 6;
+    n /= 2;
 
-    // If my math is correct, any number in the sequence will be divisible by 5 or 7
-    x = n * 6 - 1;
-    if(x % 5 == 0 || x % 7 == 0) x = n * x + 1;
-    x = ImMax(x, IMSET_MIN_CAPACITY);
-    return x;
+    while(true)
+    {
+        x = (n * 6) - 1;
+        if(!ImIsPrime(x)) x = (n * 6) + 1;
+        if(!ImIsPrime(x)) { --n; continue; }
+        return ImMax(x, IMSET_MIN_CAPACITY);
+    }
 }
 
 template<typename T>
