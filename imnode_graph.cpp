@@ -20,6 +20,8 @@
 
 #include <iostream>
 
+//#define IMNODE_GRAPH_DEBUG_PIN_BOUNDS
+
 struct ImNodeFontConfig
 {
 	char* Path;
@@ -149,6 +151,7 @@ ImNodeGraphData::ImNodeGraphData(ImNodeGraphContext* ctx, const char* name)
 	, CurrentNode(nullptr)
 	, CurrentPin(nullptr)
 	, SubmitCount(0)
+    , Validation(nullptr)
 { Name = ImStrdup(name); }
 
 ImPinData& ImNodeGraphData::FindPin(ImPinPtr pin)
@@ -413,10 +416,16 @@ void ImNodeGraph::DrawGraph(ImNodeGraphData* Graph)
 		DrawConnection(pin, ImGui::GetMousePos());
 	}
 
-	for(ImPinConnection& connection : Graph->Connections)
-	{
+    for(int i = 0; i < Graph->Connections.Size(); ++i)
+    {
+        if(Graph->Connections(i) == false) continue;
+
+        ImPinConnection& connection = Graph->Connections[i];
+
+        if(CheckConnectionValidity(i, connection)) continue;
+
 		DrawConnection(Graph->FindPin(connection.A), Graph->FindPin(connection.B));
-	}
+    }
 
     if(Graph->SelectRegionStart())
     {
@@ -580,13 +589,18 @@ void ImNodeGraph::SortChannels()
 	ImDrawList&         DrawList = *ImGui::GetWindowDrawList();
 	ImDrawListSplitter& Splitter = DrawList._Splitter;
 
-	int chnl = Splitter._Current;
-	int strt = Splitter._Channels.Size - Graph.SubmitCount * 2;
+    int nump = Graph.Nodes.Active.Size;
+	int strt = Splitter._Channels.Size - nump * 2;
 	int cnt  = Graph.SubmitCount * 2;
 
 	auto& indices = Graph.Nodes;
 	auto& arr = Splitter._Channels;
-	ImVector<ImDrawChannel> temp; temp.reserve(cnt); temp.resize(cnt);
+	ImVector<ImDrawChannel> temp; temp.reserve(cnt);
+
+    for(int i = 0; i < cnt; ++i)
+    {
+        temp.push_back({ ImVector<ImDrawCmd>(), ImVector<ImDrawIdx>() });
+    }
 
     Splitter.SetCurrentChannel(&DrawList, 0);
 
@@ -596,6 +610,9 @@ void ImNodeGraph::SortChannels()
 
 		const int swap_idx = strt + i * 2;
 		ImNodeData& node = indices[i];
+
+	    if(node.Graph == nullptr) continue;
+
 		SwapChannel(temp[node.BgChannelIndex - strt], arr[swap_idx]);
 		SwapChannel(temp[node.FgChannelIndex - strt], arr[swap_idx + 1]);
 	}
@@ -604,6 +621,49 @@ void ImNodeGraph::SortChannels()
 	{
 	    SwapChannel(arr[strt + i], temp[i]);
 	}
+}
+
+bool ImNodeGraph::CheckConnectionValidity(ImGuiID id, ImPinConnection& connection)
+{
+    ImNodeGraphContext&        G = *GImNodeGraph;
+    ImNodeGraphData&       Graph = *G.CurrentGraph;
+
+    ImNodeData* node_a = Graph.Nodes(connection.A.Node) ? &Graph.Nodes[connection.A.Node] : nullptr;
+    ImNodeData* node_b = Graph.Nodes(connection.B.Node) ? &Graph.Nodes[connection.B.Node] : nullptr;
+
+    if(node_a == nullptr) { CleanupConnection(id, connection); return true; }
+    if(node_b == nullptr) { CleanupConnection(id, connection); return true; }
+
+    if(connection.A.Direction && node_a->OutputPins(connection.A.Pin) == false) { CleanupConnection(id, connection); return true; }
+    if(!connection.A.Direction && node_a->InputPins(connection.A.Pin) == false) { CleanupConnection(id, connection); return true; }
+
+    if(connection.B.Direction && node_b->OutputPins(connection.B.Pin) == false) { CleanupConnection(id, connection); return true; }
+    if(!connection.B.Direction && node_b->InputPins(connection.B.Pin) == false) { CleanupConnection(id, connection); return true; }
+
+    return false;
+}
+
+void ImNodeGraph::CleanupConnection(ImGuiID id, ImPinConnection &connection)
+{
+    ImNodeGraphContext&        G = *GImNodeGraph;
+    ImNodeGraphData&       Graph = *G.CurrentGraph;
+
+    ImNodeData* node_a = Graph.Nodes(connection.A.Node) ? &Graph.Nodes[connection.A.Node] : nullptr;
+    ImNodeData* node_b = Graph.Nodes(connection.B.Node) ? &Graph.Nodes[connection.B.Node] : nullptr;
+
+    if(node_a)
+    {
+        auto& pins = connection.A.Direction ? node_a->OutputPins : node_a->InputPins;
+        pins[connection.A.Pin].Connections.find_erase(id);
+    }
+
+    if(node_b)
+    {
+        auto& pins = connection.B.Direction ? node_b->OutputPins : node_b->InputPins;
+        pins[connection.B.Pin].Connections.find_erase(id);
+    }
+
+    Graph.Connections.Erase(id);
 }
 
 
@@ -653,16 +713,6 @@ ImNodeData &ImNodeData::operator=(const ImNodeData& other)
 	return *this;
 }
 
-
-ImPinData::ImPinData()
-	: Node(0)
-	, ID(0)
-	, Type(0)
-	, Direction(ImPinDirection_Input)
-	, Flags(ImPinFlags_None)
-	, Hovered(false)
-{ }
-
 void ImNodeGraph::DrawNode(ImNodeData& Node)
 {
 	ImNodeGraphData*  Graph =  Node.Graph;
@@ -711,6 +761,28 @@ void ImNodeGraph::DrawNode(ImNodeData& Node)
         );
     }
 
+#ifdef IMNODE_GRAPH_DEBUG_PIN_BOUNDS
+
+    for(ImPinData& pin : Node.InputPins)
+    {
+        DrawList.AddRect(
+            pin.ScreenBounds.Min, pin.ScreenBounds.Max
+        ,   ImGui::ColorConvertFloat4ToU32({ 1, 0, 0, 1 })
+        ,   0, 0, 2
+        );
+    }
+
+    for(ImPinData& pin : Node.OutputPins)
+    {
+        DrawList.AddRect(
+            pin.ScreenBounds.Min, pin.ScreenBounds.Max
+        ,   ImGui::ColorConvertFloat4ToU32({ 1, 0, 0, 1 })
+        ,   0, 0, 2
+        );
+    }
+
+#endif
+
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar();
 }
@@ -752,6 +824,18 @@ bool ImNodeGraph::NodeBehaviour(ImNodeData& Node)
 
     return false;
 }
+
+// Pins ----------------------------------------------------------------------------------------------------------------
+
+
+ImPinData::ImPinData()
+    : Node(0)
+    , ID(0)
+    , Type(0)
+    , Direction(ImPinDirection_Input)
+    , Flags(ImPinFlags_None)
+    , Hovered(false)
+{ }
 
 void ImNodeGraph::PinHead(ImGuiID id, ImPinData& Pin)
 {
@@ -851,6 +935,9 @@ void ImNodeGraph::DummyPinHead(ImPinData& Pin)
 	ImGui::PopStyleVar(2);
 }
 
+
+// Connections ---------------------------------------------------------------------------------------------------------
+
 void ImNodeGraph::BeginConnection(const ImPinPtr &pin)
 {
 	ImNodeGraphContext&  G = *GImNodeGraph;
@@ -858,10 +945,10 @@ void ImNodeGraph::BeginConnection(const ImPinPtr &pin)
 	Graph.NewConnection = pin;
 }
 
-void ImNodeGraph::MakeConnection(const ImPinPtr &a, const ImPinPtr &b)
+bool ImNodeGraph::MakeConnection(const ImPinPtr &a, const ImPinPtr &b)
 {
-	if(a.Direction == b.Direction) return;
-	if(a.Node == b.Node) return;
+	if(a.Direction == b.Direction) return false;
+	if(a.Node == b.Node)           return false;
 
 	ImNodeGraphContext&  G = *GImNodeGraph;
 	ImNodeGraphData& Graph = *G.CurrentGraph;
@@ -869,10 +956,20 @@ void ImNodeGraph::MakeConnection(const ImPinPtr &a, const ImPinPtr &b)
 	ImPinData& A = Graph.FindPin(a);
 	ImPinData& B = Graph.FindPin(b);
 
+    if(Graph.Validation && Graph.Validation(A, B)) return false;
+
+    if(A.Direction == ImPinDirection_Input && !A.Connections.empty()) BreakConnections(A);
+    if(B.Direction == ImPinDirection_Input && !B.Connections.empty()) BreakConnections(B);
+
 	ImGuiID connId = Graph.Connections.Insert({ a, b });
 
 	A.Connections.push_back(connId);
 	B.Connections.push_back(connId);
+
+    A.NewConnections.push_back(b); A.BNewConnections = true;
+    B.NewConnections.push_back(a); B.BNewConnections = true;
+
+    return true;
 }
 
 void ImNodeGraph::BreakConnection(ImGuiID id)
@@ -886,6 +983,13 @@ void ImNodeGraph::BreakConnection(ImGuiID id)
 
 	A.Connections.find_erase_unsorted(id);
 	B.Connections.find_erase_unsorted(id);
+
+    A.ErasedConnections.push_back(connection.B); A.BErasedConnections = true;
+    B.ErasedConnections.push_back(connection.A); B.BErasedConnections = true;
+
+    ImPinPtr* it;
+    if((it = A.NewConnections.find(B)) != A.NewConnections.end()) A.NewConnections.erase(it);
+    if((it = B.NewConnections.find(A)) != B.NewConnections.end()) B.NewConnections.erase(it);
 }
 
 void ImNodeGraph::BreakConnections(const ImPinPtr &ptr)
@@ -898,6 +1002,14 @@ void ImNodeGraph::BreakConnections(const ImPinPtr &ptr)
 	{
 		ImPinConnection connection = Graph.Connections[id]; Graph.Connections.Erase(id);
 		ImPinData& other = Graph.FindPin((connection.A == ptr) ? connection.B : connection.A);
+
+	    Pin.ErasedConnections.push_back(other); Pin.BErasedConnections   = true;
+	    other.ErasedConnections.push_back(ptr); other.BErasedConnections = true;
+
+	    ImPinPtr* it;
+	    if((it = Pin.NewConnections.find(other)) != Pin.NewConnections.end())   Pin.NewConnections.erase(it);
+        if((it = other.NewConnections.find(Pin)) != other.NewConnections.end()) other.NewConnections.erase(it);
+
 		other.Connections.find_erase_unsorted(id);
 	}
 
@@ -974,275 +1086,125 @@ ImVec2 ImNodeGraph::PinConnectionAnchor(const ImPinData &Pin)
 #define IM_FIXNORMAL2F(VX,VY)               { float d2 = VX*VX + VY*VY; if (d2 > 0.000001f) { float inv_len2 = 1.0f / d2; if (inv_len2 > IM_FIXNORMAL2F_MAX_INVLEN2) inv_len2 = IM_FIXNORMAL2F_MAX_INVLEN2; VX *= inv_len2; VY *= inv_len2; } } (void)0
 
 void ImNodeGraph::AddPolylineMultiColored(ImDrawList &draw_list, const ImVec2 *points, int num_points, const ImVec4 &c1,
-										  const ImVec4 &c2, ImDrawFlags flags, float thickness)
+                                          const ImVec4 &c2, ImDrawFlags flags, float thickness)
 {
-	if (num_points < 2)
-		return;
+    if (num_points < 2) return;
 
-	const bool closed = (flags & ImDrawFlags_Closed) != 0;
-	const ImVec2 opaque_uv = draw_list._Data->TexUvWhitePixel;
-	const int count = closed ? num_points : num_points - 1; // The number of line segments we need to draw
-	const bool thick_line = (thickness > draw_list._FringeScale);
+    const int count = num_points - 1; // The number of line segments we need to draw
+    const bool thick_line = (thickness > draw_list._FringeScale);
+    const ImVec2 opaque_uv = draw_list._Data->TexUvWhitePixel;
 
-	if (draw_list.Flags & ImDrawListFlags_AntiAliasedLines)
-	{
-		// Anti-aliased stroke
-		const float AA_SIZE = draw_list._FringeScale;
+    draw_list._Data->TempBuffer.reserve_discard(num_points * 2);
+    ImVec2* normals = draw_list._Data->TempBuffer.Data;
+    ImU32* colors   = reinterpret_cast<ImU32*>(normals + num_points);
+    for(int i = 0; i < count; ++i)
+    {
+        const ImVec2 &a = points[i], &b = points[(i + 1) % num_points];
+        normals[i] = b - a;
+        IM_NORMALIZE2F_OVER_ZERO(normals[i].x, normals[i].y);
+        normals[i] = { normals[i].y, -normals[i].x };
+        colors[i]  = ImGui::ColorConvertFloat4ToU32({ ImLerp(c1, c2, i / static_cast<float>(num_points)) });
+    }
+    colors[num_points - 1]  = ImGui::ColorConvertFloat4ToU32(c2);
+    normals[num_points - 1] = normals[num_points - 2];
 
-		// Thicknesses <1.0 should behave like thickness 1.0
-		thickness = ImMax(thickness, 1.0f);
-		const int   integer_thickness    = static_cast<int>(thickness);
-		const float fractional_thickness = thickness - static_cast<float>(integer_thickness);
+    for(int i = 1; i < count; ++i)
+    {
+        normals[i] = (normals[i] + normals[i + 1]) * 0.5f;
+        IM_FIXNORMAL2F(normals[i].x, normals[i].y);
+    }
 
-		// Do we want to draw this line using a texture?
-		// - For now, only draw integer-width lines using textures to avoid issues with the way scaling occurs, could be improved.
-		// - If AA_SIZE is not 1.0f we cannot use the texture path.
-		const bool use_texture = (draw_list.Flags & ImDrawListFlags_AntiAliasedLinesUseTex) && (integer_thickness < IM_DRAWLIST_TEX_LINES_WIDTH_MAX) && (fractional_thickness <= 0.00001f) && (AA_SIZE == 1.0f);
+    const float AA_SIZE = draw_list._FringeScale;
 
-		// We should never hit this, because NewFrame() doesn't set ImDrawListFlags_AntiAliasedLinesUseTex unless ImFontAtlasFlags_NoBakedLines is off
-		IM_ASSERT_PARANOID(!use_texture || !(_Data->Font->ContainerAtlas->Flags & ImFontAtlasFlags_NoBakedLines));
+    // Thicknesses <1.0 should behave like thickness 1.0
+    thickness = ImMax(thickness, 1.0f);
+    const int integer_thickness = (int)thickness;
+    const float half_inner_thickness = (thickness - AA_SIZE) * 0.5f;
 
-		const int idx_count = use_texture ? (count * 6) : (thick_line ? count * 18 : count * 12);
-		const int vtx_count = use_texture ? (num_points * 2) : (thick_line ? num_points * 4 : num_points * 3);
-		draw_list.PrimReserve(idx_count, vtx_count);
+    const int idx_count = thick_line ? count * 18     : count * 12;
+    const int vtx_count = thick_line ? num_points * 4 : num_points * 3;
+    draw_list.PrimReserve(idx_count, vtx_count);
 
-		// Temporary buffer
-		// The first <points_count> items are normals at each line point, then after that there are either 2 or 4 temp points for each line point
-		draw_list._Data->TempBuffer.reserve_discard(num_points * ((use_texture || !thick_line) ? 3 : 5));
-		ImVec2* temp_normals = draw_list._Data->TempBuffer.Data;
-		ImVec2* temp_points = temp_normals + num_points;
+    ImDrawIdx*  _IdxWritePtr = draw_list._IdxWritePtr;
+    ImDrawVert* _VtxWritePtr = draw_list._VtxWritePtr;
 
-		// Calculate normals (tangents) for each line segment
-		for (int i1 = 0; i1 < count; i1++)
-		{
-			const int i2 = (i1 + 1) == num_points ? 0 : i1 + 1;
-			float dx = points[i2].x - points[i1].x;
-			float dy = points[i2].y - points[i1].y;
-			IM_NORMALIZE2F_OVER_ZERO(dx, dy);
-			temp_normals[i1].x = dy;
-			temp_normals[i1].y = -dx;
-		}
-		if (!closed)
-			temp_normals[num_points - 1] = temp_normals[num_points - 2];
+    for(int i = 0; i <= count; ++i)
+    {
+        if(thick_line)
+        {
+            const int v1 = draw_list._VtxCurrentIdx + i * 4;
+            const int v2 = draw_list._VtxCurrentIdx + i * 4 + 4;
 
-		// If we are drawing a one-pixel-wide line without a texture, or a textured line of any width, we only need 2 or 3 vertices per point
-		if (use_texture || !thick_line)
-		{
-			// [PATH 1] Texture-based lines (thick or non-thick)
-			// [PATH 2] Non texture-based lines (non-thick)
+            const int i1 = i;
 
-			// The width of the geometry we need to draw - this is essentially <thickness> pixels for the line itself, plus "one pixel" for AA.
-			// - In the texture-based path, we don't use AA_SIZE here because the +1 is tied to the generated texture
-			//   (see ImFontAtlasBuildRenderLinesTexData() function), and so alternate values won't work without changes to that code.
-			// - In the non texture-based paths, we would allow AA_SIZE to potentially be != 1.0f with a patch (e.g. fringe_scale patch to
-			//   allow scaling geometry while preserving one-screen-pixel AA fringe).
-			const float half_draw_size = use_texture ? ((thickness * 0.5f) + 1) : AA_SIZE;
+            const ImVec2 n1 = normals[i1] * (half_inner_thickness + AA_SIZE);
+            const ImVec2 n2 = normals[i1] * (half_inner_thickness);
 
-			// If line is not closed, the first and last points need to be generated differently as there are no normals to blend
-			if (!closed)
-			{
-				temp_points[0] = points[0] + temp_normals[0] * half_draw_size;
-				temp_points[1] = points[0] - temp_normals[0] * half_draw_size;
-				temp_points[(num_points-1)*2+0] = points[num_points-1] + temp_normals[num_points-1] * half_draw_size;
-				temp_points[(num_points-1)*2+1] = points[num_points-1] - temp_normals[num_points-1] * half_draw_size;
-			}
+            // first points
+            _VtxWritePtr[0].pos = points[i1] + n1; _VtxWritePtr[0].uv = opaque_uv; _VtxWritePtr[0].col = colors[i1] & ~IM_COL32_A_MASK;
+            _VtxWritePtr[1].pos = points[i1] + n2; _VtxWritePtr[1].uv = opaque_uv; _VtxWritePtr[1].col = colors[i1];
+            _VtxWritePtr[2].pos = points[i1] - n2; _VtxWritePtr[2].uv = opaque_uv; _VtxWritePtr[2].col = colors[i1];
+            _VtxWritePtr[3].pos = points[i1] - n1; _VtxWritePtr[3].uv = opaque_uv; _VtxWritePtr[3].col = colors[i1] & ~IM_COL32_A_MASK;
 
-			// Generate the indices to form a number of triangles for each line segment, and the vertices for the line edges
-			// This takes points n and n+1 and writes into n+1, with the first point in a closed line being generated from the final one (as n+1 wraps)
-			// FIXME-OPT: Merge the different loops, possibly remove the temporary buffer.
-			unsigned int idx1 = draw_list._VtxCurrentIdx; // Vertex index for start of line segment
-			for (int i1 = 0; i1 < count; i1++) // i1 is the first point of the line segment
-			{
-				const int i2 = (i1 + 1) == num_points ? 0 : i1 + 1; // i2 is the second point of the line segment
-				const unsigned int idx2 = ((i1 + 1) == num_points) ? draw_list._VtxCurrentIdx : (idx1 + (use_texture ? 2 : 3)); // Vertex index for end of segment
+            _VtxWritePtr += 4;
 
-				// Average normals
-				float dm_x = (temp_normals[i1].x + temp_normals[i2].x) * 0.5f;
-				float dm_y = (temp_normals[i1].y + temp_normals[i2].y) * 0.5f;
-				IM_FIXNORMAL2F(dm_x, dm_y);
-				dm_x *= half_draw_size; // dm_x, dm_y are offset to the outer edge of the AA area
-				dm_y *= half_draw_size;
+            if(i == count) continue;
 
-				// Add temporary vertexes for the outer edges
-				ImVec2* out_vtx = &temp_points[i2 * 2];
-				out_vtx[0].x = points[i2].x + dm_x;
-				out_vtx[0].y = points[i2].y + dm_y;
-				out_vtx[1].x = points[i2].x - dm_x;
-				out_vtx[1].y = points[i2].y - dm_y;
+            // top
+            _IdxWritePtr[0] = v1 + 0; _IdxWritePtr[1] = v2 + 0; _IdxWritePtr[2] = v1 + 1;
+            _IdxWritePtr[3] = v1 + 1; _IdxWritePtr[4] = v2 + 0; _IdxWritePtr[5] = v2 + 1;
 
-				if (use_texture)
-				{
-					// Add indices for two triangles
-					draw_list._IdxWritePtr[0] = (ImDrawIdx)(idx2 + 0); draw_list._IdxWritePtr[1] = (ImDrawIdx)(idx1 + 0); draw_list._IdxWritePtr[2] = (ImDrawIdx)(idx1 + 1); // Right tri
-					draw_list._IdxWritePtr[3] = (ImDrawIdx)(idx2 + 1); draw_list._IdxWritePtr[4] = (ImDrawIdx)(idx1 + 1); draw_list._IdxWritePtr[5] = (ImDrawIdx)(idx2 + 0); // Left tri
-					draw_list._IdxWritePtr += 6;
-				}
-				else
-				{
-					// Add indexes for four triangles
-					draw_list._IdxWritePtr[0] = (ImDrawIdx)(idx2 + 0); draw_list._IdxWritePtr[1]  = (ImDrawIdx)(idx1 + 0); draw_list._IdxWritePtr[2] = (ImDrawIdx)(idx1 + 2); // Right tri 1
-					draw_list._IdxWritePtr[3] = (ImDrawIdx)(idx1 + 2); draw_list._IdxWritePtr[4]  = (ImDrawIdx)(idx2 + 2); draw_list._IdxWritePtr[5] = (ImDrawIdx)(idx2 + 0); // Right tri 2
-					draw_list._IdxWritePtr[6] = (ImDrawIdx)(idx2 + 1); draw_list._IdxWritePtr[7]  = (ImDrawIdx)(idx1 + 1); draw_list._IdxWritePtr[8] = (ImDrawIdx)(idx1 + 0); // Left tri 1
-					draw_list._IdxWritePtr[9] = (ImDrawIdx)(idx1 + 0); draw_list._IdxWritePtr[10] = (ImDrawIdx)(idx2 + 0); draw_list._IdxWritePtr[11] = (ImDrawIdx)(idx2 + 1); // Left tri 2
-					draw_list._IdxWritePtr += 12;
-				}
+            // middle
+            _IdxWritePtr[6] = v1 + 1; _IdxWritePtr[7]  = v2 + 1; _IdxWritePtr[8]  = v1 + 2;
+            _IdxWritePtr[9] = v1 + 2; _IdxWritePtr[10] = v2 + 1; _IdxWritePtr[11] = v2 + 2;
 
-				idx1 = idx2;
-			}
+            // bottom
+            _IdxWritePtr[12] = v1 + 2; _IdxWritePtr[13] = v2 + 2; _IdxWritePtr[14] = v1 + 3;
+            _IdxWritePtr[15] = v1 + 3; _IdxWritePtr[16] = v2 + 2; _IdxWritePtr[17] = v2 + 3;
 
-			// Add vertexes for each point on the line
-			if (use_texture)
-			{
-				// If we're using textures we only need to emit the left/right edge vertices
-				ImVec4 tex_uvs = draw_list._Data->TexUvLines[integer_thickness];
-				/*if (fractional_thickness != 0.0f) // Currently always zero when use_texture==false!
-				{
-					const ImVec4 tex_uvs_1 = _Data->TexUvLines[integer_thickness + 1];
-					tex_uvs.x = tex_uvs.x + (tex_uvs_1.x - tex_uvs.x) * fractional_thickness; // inlined ImLerp()
-					tex_uvs.y = tex_uvs.y + (tex_uvs_1.y - tex_uvs.y) * fractional_thickness;
-					tex_uvs.z = tex_uvs.z + (tex_uvs_1.z - tex_uvs.z) * fractional_thickness;
-					tex_uvs.w = tex_uvs.w + (tex_uvs_1.w - tex_uvs.w) * fractional_thickness;
-				}*/
-				ImVec2 tex_uv0(tex_uvs.x, tex_uvs.y);
-				ImVec2 tex_uv1(tex_uvs.z, tex_uvs.w);
-				float  cstep = 1.0f / static_cast<float>(num_points);
-				for (int i = 0; i < num_points; i++)
-				{
-					ImU32 col1 = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, cstep * (i + 0)));
-					ImU32 col2 = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, cstep * (i + 1)));
-					draw_list._VtxWritePtr[0].pos = temp_points[i * 2 + 0]; draw_list._VtxWritePtr[0].uv = tex_uv0; draw_list._VtxWritePtr[0].col = col1; // Left-side outer edge
-					draw_list._VtxWritePtr[1].pos = temp_points[i * 2 + 1]; draw_list._VtxWritePtr[1].uv = tex_uv1; draw_list._VtxWritePtr[1].col = col2; // Right-side outer edge
-					draw_list._VtxWritePtr += 2;
-				}
-			}
-			else
-			{
-				// If we're not using a texture, we need the center vertex as well
-				float  cstep = 1.0f / static_cast<float>(num_points);
-				for (int i = 0; i < num_points; i++)
-				{
-					ImU32 col1 = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, cstep * (i + 0)));
-					ImU32 col2 = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, cstep * (i + 1)));
-					draw_list._VtxWritePtr[0].pos = points[i];              draw_list._VtxWritePtr[0].uv = opaque_uv; draw_list._VtxWritePtr[0].col = col1;       // Center of line
-					draw_list._VtxWritePtr[1].pos = temp_points[i * 2 + 0]; draw_list._VtxWritePtr[1].uv = opaque_uv; draw_list._VtxWritePtr[1].col = col1 & ~IM_COL32_A_MASK; // Left-side outer edge
-					draw_list._VtxWritePtr[2].pos = temp_points[i * 2 + 1]; draw_list._VtxWritePtr[2].uv = opaque_uv; draw_list._VtxWritePtr[2].col = col2 & ~IM_COL32_A_MASK; // Right-side outer edge
-					draw_list._VtxWritePtr += 3;
-				}
-			}
-		}
-		else
-		{
-			// [PATH 2] Non texture-based lines (thick): we need to draw the solid line core and thus require four vertices per point
-			const float half_inner_thickness = (thickness - AA_SIZE) * 0.5f;
+            _IdxWritePtr += 18;
+        }
+        else
+        {
+            const int v1 = draw_list._VtxCurrentIdx + i * 4;
+            const int v2 = draw_list._VtxCurrentIdx + i * 4 + 4;
 
-			// If line is not closed, the first and last points need to be generated differently as there are no normals to blend
-			if (!closed)
-			{
-				const int points_last = num_points - 1;
-				temp_points[0] = points[0] + temp_normals[0] * (half_inner_thickness + AA_SIZE);
-				temp_points[1] = points[0] + temp_normals[0] * (half_inner_thickness);
-				temp_points[2] = points[0] - temp_normals[0] * (half_inner_thickness);
-				temp_points[3] = points[0] - temp_normals[0] * (half_inner_thickness + AA_SIZE);
-				temp_points[points_last * 4 + 0] = points[points_last] + temp_normals[points_last] * (half_inner_thickness + AA_SIZE);
-				temp_points[points_last * 4 + 1] = points[points_last] + temp_normals[points_last] * (half_inner_thickness);
-				temp_points[points_last * 4 + 2] = points[points_last] - temp_normals[points_last] * (half_inner_thickness);
-				temp_points[points_last * 4 + 3] = points[points_last] - temp_normals[points_last] * (half_inner_thickness + AA_SIZE);
-			}
+            const int i1 = i;
 
-			// Generate the indices to form a number of triangles for each line segment, and the vertices for the line edges
-			// This takes points n and n+1 and writes into n+1, with the first point in a closed line being generated from the final one (as n+1 wraps)
-			// FIXME-OPT: Merge the different loops, possibly remove the temporary buffer.
-			unsigned int idx1 = draw_list._VtxCurrentIdx; // Vertex index for start of line segment
-			for (int i1 = 0; i1 < count; i1++) // i1 is the first point of the line segment
-			{
-				const int i2 = (i1 + 1) == num_points ? 0 : (i1 + 1); // i2 is the second point of the line segment
-				const unsigned int idx2 = (i1 + 1) == num_points ? num_points : (idx1 + 4); // Vertex index for end of segment
+            const ImVec2 n = normals[i1] * AA_SIZE;
 
-				// Average normals
-				float dm_x = (temp_normals[i1].x + temp_normals[i2].x) * 0.5f;
-				float dm_y = (temp_normals[i1].y + temp_normals[i2].y) * 0.5f;
-				IM_FIXNORMAL2F(dm_x, dm_y);
-				float dm_out_x = dm_x * (half_inner_thickness + AA_SIZE);
-				float dm_out_y = dm_y * (half_inner_thickness + AA_SIZE);
-				float dm_in_x = dm_x * half_inner_thickness;
-				float dm_in_y = dm_y * half_inner_thickness;
+            // first points
+            _VtxWritePtr[0].pos = points[i1] + n; _VtxWritePtr[0].uv = opaque_uv; _VtxWritePtr[0].col = colors[i1] & ~IM_COL32_A_MASK;
+            _VtxWritePtr[1].pos = points[i1];     _VtxWritePtr[1].uv = opaque_uv; _VtxWritePtr[1].col = colors[i1];
+            _VtxWritePtr[2].pos = points[i1] - n; _VtxWritePtr[2].uv = opaque_uv; _VtxWritePtr[2].col = colors[i1] & ~IM_COL32_A_MASK;
 
-				// Add temporary vertices
-				ImVec2* out_vtx = &temp_points[i2 * 4];
-				out_vtx[0].x = points[i2].x + dm_out_x;
-				out_vtx[0].y = points[i2].y + dm_out_y;
-				out_vtx[1].x = points[i2].x + dm_in_x;
-				out_vtx[1].y = points[i2].y + dm_in_y;
-				out_vtx[2].x = points[i2].x - dm_in_x;
-				out_vtx[2].y = points[i2].y - dm_in_y;
-				out_vtx[3].x = points[i2].x - dm_out_x;
-				out_vtx[3].y = points[i2].y - dm_out_y;
+            _VtxWritePtr += 3;
 
-				// Add indexes
-				draw_list._IdxWritePtr[0]  = (ImDrawIdx)(idx2 + 1); draw_list._IdxWritePtr[1]  = (ImDrawIdx)(idx1 + 1); draw_list._IdxWritePtr[2]  = (ImDrawIdx)(idx1 + 2);
-				draw_list._IdxWritePtr[3]  = (ImDrawIdx)(idx1 + 2); draw_list._IdxWritePtr[4]  = (ImDrawIdx)(idx2 + 2); draw_list._IdxWritePtr[5]  = (ImDrawIdx)(idx2 + 1);
-				draw_list._IdxWritePtr[6]  = (ImDrawIdx)(idx2 + 1); draw_list._IdxWritePtr[7]  = (ImDrawIdx)(idx1 + 1); draw_list._IdxWritePtr[8]  = (ImDrawIdx)(idx1 + 0);
-				draw_list._IdxWritePtr[9]  = (ImDrawIdx)(idx1 + 0); draw_list._IdxWritePtr[10] = (ImDrawIdx)(idx2 + 0); draw_list._IdxWritePtr[11] = (ImDrawIdx)(idx2 + 1);
-				draw_list._IdxWritePtr[12] = (ImDrawIdx)(idx2 + 2); draw_list._IdxWritePtr[13] = (ImDrawIdx)(idx1 + 2); draw_list._IdxWritePtr[14] = (ImDrawIdx)(idx1 + 3);
-				draw_list._IdxWritePtr[15] = (ImDrawIdx)(idx1 + 3); draw_list._IdxWritePtr[16] = (ImDrawIdx)(idx2 + 3); draw_list._IdxWritePtr[17] = (ImDrawIdx)(idx2 + 2);
-				draw_list._IdxWritePtr += 18;
+            if(i == count) continue;
 
-				idx1 = idx2;
-			}
+            // top
+            _IdxWritePtr[0] = v1 + 0; _IdxWritePtr[1] = v2 + 0; _IdxWritePtr[2] = v1 + 1;
+            _IdxWritePtr[3] = v1 + 1; _IdxWritePtr[4] = v2 + 0; _IdxWritePtr[5] = v2 + 1;
 
-			// Add vertices
-			float  cstep = 1.0f / static_cast<float>(num_points);
-			for (int i = 0; i < num_points; i++)
-			{
-				ImU32 col1 = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, cstep * (i + 0)));
-				ImU32 col2 = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, cstep * (i + 1)));
-				draw_list._VtxWritePtr[0].pos = temp_points[i * 4 + 0]; draw_list._VtxWritePtr[0].uv = opaque_uv; draw_list._VtxWritePtr[0].col = col1 & ~IM_COL32_A_MASK;
-				draw_list._VtxWritePtr[1].pos = temp_points[i * 4 + 1]; draw_list._VtxWritePtr[1].uv = opaque_uv; draw_list._VtxWritePtr[1].col = col1;
-				draw_list._VtxWritePtr[2].pos = temp_points[i * 4 + 2]; draw_list._VtxWritePtr[2].uv = opaque_uv; draw_list._VtxWritePtr[2].col = col2;
-				draw_list._VtxWritePtr[3].pos = temp_points[i * 4 + 3]; draw_list._VtxWritePtr[3].uv = opaque_uv; draw_list._VtxWritePtr[3].col = col2 & ~IM_COL32_A_MASK;
-				draw_list._VtxWritePtr += 4;
-			}
-		}
-		draw_list._VtxCurrentIdx += (ImDrawIdx)vtx_count;
-	}
-	else
-	{
-		// [PATH 4] Non texture-based, Non anti-aliased lines
-		const int idx_count = count * 6;
-		const int vtx_count = count * 4;    // FIXME-OPT: Not sharing edges
-		draw_list.PrimReserve(idx_count, vtx_count);
+            // bottom
+            _IdxWritePtr[6] = v1 + 1; _IdxWritePtr[7]  = v2 + 1; _IdxWritePtr[8]  = v1 + 2;
+            _IdxWritePtr[9] = v1 + 2; _IdxWritePtr[10] = v2 + 1; _IdxWritePtr[11] = v2 + 2;
 
-		float  cstep = 1.0f / static_cast<float>(num_points);
-		for (int i1 = 0; i1 < count; i1++)
-		{
-			const int i2 = (i1 + 1) == num_points ? 0 : i1 + 1;
-			const ImVec2& p1 = points[i1];
-			const ImVec2& p2 = points[i2];
+            _IdxWritePtr += 12;
+        }
+    }
 
-			float dx = p2.x - p1.x;
-			float dy = p2.y - p1.y;
-			IM_NORMALIZE2F_OVER_ZERO(dx, dy);
-			dx *= (thickness * 0.5f);
-			dy *= (thickness * 0.5f);
-
-			ImU32 col1 = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, cstep * (i1 + 0)));
-			ImU32 col2 = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, cstep * (i1 + 1)));
-			draw_list._VtxWritePtr[0].pos.x = p1.x + dy; draw_list._VtxWritePtr[0].pos.y = p1.y - dx; draw_list._VtxWritePtr[0].uv = opaque_uv; draw_list._VtxWritePtr[0].col = col1;
-			draw_list._VtxWritePtr[1].pos.x = p2.x + dy; draw_list._VtxWritePtr[1].pos.y = p2.y - dx; draw_list._VtxWritePtr[1].uv = opaque_uv; draw_list._VtxWritePtr[1].col = col1;
-			draw_list._VtxWritePtr[2].pos.x = p2.x - dy; draw_list._VtxWritePtr[2].pos.y = p2.y + dx; draw_list._VtxWritePtr[2].uv = opaque_uv; draw_list._VtxWritePtr[2].col = col2;
-			draw_list._VtxWritePtr[3].pos.x = p1.x - dy; draw_list._VtxWritePtr[3].pos.y = p1.y + dx; draw_list._VtxWritePtr[3].uv = opaque_uv; draw_list._VtxWritePtr[3].col = col2;
-			draw_list._VtxWritePtr += 4;
-
-			draw_list._IdxWritePtr[0] = (ImDrawIdx)(draw_list._VtxCurrentIdx); draw_list._IdxWritePtr[1] = (ImDrawIdx)(draw_list._VtxCurrentIdx + 1); draw_list._IdxWritePtr[2] = (ImDrawIdx)(draw_list._VtxCurrentIdx + 2);
-			draw_list._IdxWritePtr[3] = (ImDrawIdx)(draw_list._VtxCurrentIdx); draw_list._IdxWritePtr[4] = (ImDrawIdx)(draw_list._VtxCurrentIdx + 2); draw_list._IdxWritePtr[5] = (ImDrawIdx)(draw_list._VtxCurrentIdx + 3);
-			draw_list._IdxWritePtr += 6;
-			draw_list._VtxCurrentIdx += 4;
-		}
-	}
+    draw_list._VtxCurrentIdx += static_cast<unsigned int>(_VtxWritePtr - draw_list._VtxWritePtr);
+    draw_list._VtxWritePtr = _VtxWritePtr;
+    draw_list._IdxWritePtr = _IdxWritePtr;
 }
 
+#define IM_FIXNORMAL2F_MAX_INVLEN2          100.0f // 500.0f (see #4053, #3366)
+
+#define IM_FIXNORMAL2F(VX,VY)               { float d2 = VX*VX + VY*VY; if (d2 > 0.000001f) { float inv_len2 = 1.0f / d2; if (inv_len2 > IM_FIXNORMAL2F_MAX_INVLEN2) inv_len2 = IM_FIXNORMAL2F_MAX_INVLEN2; VX *= inv_len2; VY *= inv_len2; } } (void)0
+
 void ImNodeGraph::AddBezierCubicMultiColored(ImDrawList& draw_list, const ImVec2 &p1, const ImVec2 &p2, const ImVec2 &p3, const ImVec2 &p4,
-											 const ImVec4 &c1, const ImVec4 &c2, float thickness, int num_segments)
+                                             const ImVec4 &c1, const ImVec4 &c2, float thickness, int num_segments)
 {
 	draw_list.PathLineTo(p1);
 	draw_list.PathBezierCubicCurveTo(p2, p3, p4, num_segments);
@@ -1399,8 +1361,15 @@ void ImNodeGraph::BeginGraph(const char* title, const ImVec2& size_arg)
 	Graph->SubmitCount = 0;
     Graph->LockSelectRegion = false;
 
-	// Reset nodes
-	Graph->Nodes.Cleanup(); Graph->Nodes.Reset();
+    // Cleanup erased nodes
+	int cnt = Graph->Nodes.Cleanup();
+    for(int i = ImMax(Graph->Nodes.Freed.Size - cnt - 1, 0); i < Graph->Nodes.Freed.Size; ++i)
+    {
+        Graph->Selected.Erase(Graph->Nodes.IdxToID[Graph->Nodes.Freed[i]]);
+    }
+
+    // Reset nodes
+    Graph->Nodes.Reset();
 
 	// Begin the Graph Child
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, static_cast<ImU32>(Style.Colors[ImNodeGraphColor_GridBackground]));
@@ -1436,6 +1405,56 @@ void ImNodeGraph::EndGraph()
 	G.Scope        = ImNodeGraphScope_None;
 }
 
+void ImNodeGraph::BeginGraphPostOp(const char *title)
+{
+    // Validate Global State
+    IM_ASSERT(GImNodeGraph != nullptr);
+    ImNodeGraphContext& G = *GImNodeGraph;
+
+    // Ensure we are in the scope of a window
+    ImGuiWindow* Window = ImGui::GetCurrentWindow();
+    IM_ASSERT(Window != nullptr);                       // Ensure we are within a window
+
+    // Validate parameters and graph state
+    IM_ASSERT(title != nullptr && title[0] != '\0');    // Graph name required
+    IM_ASSERT(G.Scope == ImNodeGraphScope_None);     // Ensure we are not in the scope of another graph
+
+    // Get Graph
+    ImNodeGraphData* Graph = FindGraphByTitle(title);
+
+    // Update State
+    G.CurrentGraph = Graph;
+    G.Scope        = ImNodeGraphScope_Graph;
+}
+
+void ImNodeGraph::EndGraphPostOp()
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+    ImNodeGraphContext&  G = *GImNodeGraph;
+
+    // Validate graph state
+    ImNodeGraphData* Graph = G.CurrentGraph;
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Graph && Graph != nullptr); // Ensure we are in the scope of a graph
+
+    // Update State
+    G.CurrentGraph = nullptr;
+    G.Scope        = ImNodeGraphScope_None;
+}
+
+void ImNodeGraph::SetGraphValidation(ImConnectionValidation validation)
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+    ImNodeGraphContext&  G = *GImNodeGraph;
+
+    // Validate graph state
+    ImNodeGraphData* Graph = G.CurrentGraph;
+    IM_ASSERT(G.Scope != ImNodeGraphScope_None && Graph != nullptr); // Ensure we are in the scope of a graph
+
+    Graph->Validation = validation;
+}
+
 float ImNodeGraph::GetCameraScale()
 {
 	// Validate global state
@@ -1464,7 +1483,13 @@ void ImNodeGraph::BeginNode(const char* title, ImVec2& pos)
     // Get Node
     ImGuiID id = ImGui::GetCurrentWindow()->GetID(title);
     ImNodeData& Node = Graph->Nodes[id];
-    if(Node.Graph == nullptr) { Node.Graph = Graph; Node.Root = pos; Node.ID = id; }
+    if(Node.Graph == nullptr)
+    {
+        Node.Graph = Graph;
+        Node.Root = pos;
+        Node.ID = id;
+        Node.UserID.String = title;
+    }
 
     // Style
     const ImNodeGraphStyle& Style = Graph->Style;
@@ -1505,8 +1530,14 @@ void ImNodeGraph::BeginNode(int iid, ImVec2& pos)
 
 	// Get Node
     ImGuiID id = ImGui::GetCurrentWindow()->GetID(iid);
-	ImNodeData& Node = Graph->Nodes[id];
-	if(Node.Graph == nullptr) { Node.Graph = Graph; Node.Root = pos; Node.ID = id; }
+    ImNodeData& Node = Graph->Nodes[id];
+    if(Node.Graph == nullptr)
+    {
+        Node.Graph = Graph;
+        Node.Root = pos;
+        Node.ID = id;
+        Node.UserID.Int = iid;
+    }
 
 	// Style
 	const ImNodeGraphStyle& Style = Graph->Style;
@@ -1564,9 +1595,26 @@ void ImNodeGraph::EndNode()
 	Node.ScreenBounds = { ImGui::GetItemRectMin(), ImGui::GetItemRectMax() };
     Node.ScreenBounds.Expand(Style.NodePadding * Camera.Scale);
 
-    bool hovering   = ImGui::IsMouseHoveringRect(Node.ScreenBounds.Min, Node.ScreenBounds.Max) && !other_hovered;
-    bool is_focus   = Graph->FocusedNode == Node;
-    bool is_hovered = Graph->HoveredNode == Node;
+    bool hovering      = ImGui::IsMouseHoveringRect(Node.ScreenBounds.Min, Node.ScreenBounds.Max) && !other_hovered;
+    bool is_focus      = Graph->FocusedNode == Node;
+    bool is_hovered    = Graph->HoveredNode == Node;
+
+    // Fixup pins
+    float Width  = 0;
+    auto  Input  = Node.InputPins.begin();
+    auto  Output = Node.OutputPins.begin();
+    const auto InputEnd = Node.InputPins.end();
+    const auto OutputEnd = Node.OutputPins.end();
+
+    while(Input != InputEnd || Output != OutputEnd)
+    {
+        float iWidth =  Input != InputEnd  ? Input->ScreenBounds.GetWidth() : 0;
+        float oWidth = Output != OutputEnd ? Output->ScreenBounds.GetWidth() : 0;
+        Width = ImMax(Width, iWidth + oWidth);
+
+        if(Input  != InputEnd)  { if(Input->Hovered)  hovering = false; ++Input;  }
+        if(Output != OutputEnd) { if(Output->Hovered) hovering = false; ++Output; }
+    }
 
     Node.Hovered  =  hovering; // Whether mouse is over node
     Node.Hovered &= !Graph->HoveredNode() || is_hovered; // Check if a node later in the draw order is hovered
@@ -1582,23 +1630,6 @@ void ImNodeGraph::EndNode()
 	{
 		Node.Header->ScreenBounds.Min.x = Node.ScreenBounds.Min.x;
 		Node.Header->ScreenBounds.Max.x = Node.ScreenBounds.Max.x;
-	}
-
-	// Fixup pins
-	float Width  = 0;
-	auto  Input  = Node.InputPins.begin();
-	auto  Output = Node.OutputPins.begin();
-	const auto InputEnd = Node.InputPins.end();
-	const auto OutputEnd = Node.OutputPins.end();
-
-	while(Input != InputEnd || Output != OutputEnd)
-	{
-		float iWidth =  Input != InputEnd  ? Input->ScreenBounds.GetWidth() : 0;
-		float oWidth = Output != OutputEnd ? Output->ScreenBounds.GetWidth() : 0;
-		Width = ImMax(Width, iWidth + oWidth);
-
-		if(Input  != InputEnd)  ++Input;
-		if(Output != OutputEnd) ++Output;
 	}
 
 	Input      = Node.InputPins.begin();
@@ -1723,6 +1754,36 @@ void ImNodeGraph::EndNodeHeader()
 	G.Scope = ImNodeGraphScope_Node;
 }
 
+ImSet<ImGuiID>& ImNodeGraph::GetSelected()
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    return Graph->Selected;
+}
+
+ImSet<ImGuiID> & ImNodeGraph::GetSelected(const char *title)
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph = FindGraphByTitle(title);
+
+    return Graph->Selected;
+}
+
+ImUserID ImNodeGraph::GetUserID(ImGuiID id)
+{
+    return GImNodeGraph->CurrentGraph->Nodes[id].UserID;
+}
+
 void ImNodeGraph::SetPinColors(const ImColor *colors)
 {
 	// Validate global state
@@ -1735,11 +1796,10 @@ void ImNodeGraph::SetPinColors(const ImColor *colors)
 	Graph->Style.PinColors = colors;
 }
 
-void ImNodeGraph::BeginPin(const char *title, ImPinType type, ImPinDirection direction, ImPinFlags flags)
+bool ImNodeGraph::BeginPin(const char *title, ImPinType type, ImPinDirection direction, ImPinFlags flags)
 {
     // Validate global state
     IM_ASSERT(GImNodeGraph != nullptr);
-
 
     // Validate Graph state
     ImNodeGraphContext&   G = *GImNodeGraph;
@@ -1755,17 +1815,25 @@ void ImNodeGraph::BeginPin(const char *title, ImPinType type, ImPinDirection dir
     ImPinData& Pin = (direction ? Node->OutputPins[id] : Node->InputPins[id]);
     Graph->CurrentPin = &Pin;
 
+    bool changed = false;
+    changed |= !Pin.NewConnections.empty();
+    changed |= !Pin.ErasedConnections.empty();
+
+    Pin.BNewConnections    = false;
+    Pin.BErasedConnections = false;
+
     // Setup pin
-    Pin.Node = Node->ID;
-    Pin.ID   = id;
-    Pin.Type = type;
-    Pin.Direction = direction;
-    Pin.Flags = flags;
+    Pin.Node          = Node->ID;
+    Pin.ID            = id;
+    Pin.UserID.String = title;
+    Pin.Type          = type;
+    Pin.Direction     = direction;
+    Pin.Flags         = flags;
 
     // Setup ImGui Group
+    ImGui::SetCursorScreenPos(Pin.Pos); // The first frame the node will be completely garbled
     ImGui::BeginGroup();
     ImGui::PushID(static_cast<int>(id));
-    ImGui::SetCursorScreenPos(Pin.Pos); // The first frame the node will be completely garbled
 
     // Push Scope
     G.Scope = ImNodeGraphScope_Pin;
@@ -1780,9 +1848,11 @@ void ImNodeGraph::BeginPin(const char *title, ImPinType type, ImPinDirection dir
         DummyPinHead(Pin); // Guess this counts as padding
         ImGui::SameLine();
     }
+
+    return changed;
 }
 
-void ImNodeGraph::BeginPin(int iid, ImPinType type, ImPinDirection direction, ImPinFlags flags)
+bool ImNodeGraph::BeginPin(int iid, ImPinType type, ImPinDirection direction, ImPinFlags flags)
 {
 	// Validate global state
 	IM_ASSERT(GImNodeGraph != nullptr);
@@ -1798,21 +1868,29 @@ void ImNodeGraph::BeginPin(int iid, ImPinType type, ImPinDirection direction, Im
 	IM_ASSERT(G.Scope == ImNodeGraphScope_Node && Node != nullptr); // Ensure we are in the scope of a node
 
 	// Push the pin
-    ImGuiID id = ImGui::GetCurrentWindow()->GetID(iid);
-	ImPinData& Pin = (direction ? Node->OutputPins[id] : Node->InputPins[id]);
-	Graph->CurrentPin = &Pin;
+    ImGuiID        id = ImGui::GetCurrentWindow()->GetID(iid);
+	ImPinData&    Pin = (direction ? Node->OutputPins[id] : Node->InputPins[id]);
+    Graph->CurrentPin = &Pin;
+
+    bool changed = false;
+    changed |= !Pin.NewConnections.empty();
+    changed |= !Pin.ErasedConnections.empty();
+
+    Pin.BNewConnections    = false;
+    Pin.BErasedConnections = false;
 
     // Setup pin
-    Pin.Node = Node->ID;
-    Pin.ID   = id;
-    Pin.Type = type;
-    Pin.Direction = direction;
-    Pin.Flags = flags;
+    Pin.Node       = Node->ID;
+    Pin.ID         = id;
+    Pin.UserID.Int = iid;
+    Pin.Type       = type;
+    Pin.Direction  = direction;
+    Pin.Flags      = flags;
 
 	// Setup ImGui Group
+    ImGui::SetCursorScreenPos(Pin.Pos); // The first frame the node will be completely garbled
     ImGui::BeginGroup();
     ImGui::PushID(static_cast<int>(id));
-    ImGui::SetCursorScreenPos(Pin.Pos); // The first frame the node will be completely garbled
 
 	// Push Scope
 	G.Scope = ImNodeGraphScope_Pin;
@@ -1827,6 +1905,8 @@ void ImNodeGraph::BeginPin(int iid, ImPinType type, ImPinDirection direction, Im
 		DummyPinHead(Pin); // Guess this counts as padding
 		ImGui::SameLine();
 	}
+
+    return changed;
 }
 
 void ImNodeGraph::EndPin()
@@ -1841,7 +1921,7 @@ void ImNodeGraph::EndPin()
 
 	// Validate pin scope
 	ImPinData* Pin = Graph->CurrentPin;
-	IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
 
 	if(Pin->Direction)
 	{
@@ -1856,6 +1936,9 @@ void ImNodeGraph::EndPin()
 
 	// Pop Scope
 	G.Scope = ImNodeGraphScope_Node;
+
+    if(Pin->BNewConnections == false)    Pin->NewConnections.clear();
+    if(Pin->BErasedConnections == false) Pin->ErasedConnections.clear();
 }
 
 bool ImNodeGraph::IsPinConnected()
@@ -1873,4 +1956,105 @@ bool ImNodeGraph::IsPinConnected()
     IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
 
     return Pin->Connections.empty() == false;
+}
+
+bool ImNodeGraph::IsPinConnected(ImPinPtr pin)
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    // Validate pin scope
+    ImPinData& Pin = Graph->FindPin(pin);
+
+    return Pin.Connections.empty() == false;
+}
+
+const ImVector<ImGuiID>& ImNodeGraph::GetConnections()
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    // Validate pin scope
+    ImPinData* Pin = Graph->CurrentPin;
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
+
+    return Pin->Connections;
+}
+
+const ImVector<ImGuiID>& ImNodeGraph::GetConnections(ImPinPtr pin)
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    ImPinData& Pin = Graph->FindPin(pin);
+    return Pin.Connections;
+}
+
+const ImVector<ImPinPtr>& ImNodeGraph::GetNewConnections()
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    // Validate pin scope
+    ImPinData* Pin = Graph->CurrentPin;
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
+
+    return Pin->NewConnections;
+}
+
+const ImVector<ImPinPtr>& ImNodeGraph::GetErasedConnections()
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    // Validate pin scope
+    ImPinData* Pin = Graph->CurrentPin;
+    IM_ASSERT(G.Scope == ImNodeGraphScope_Pin && Pin != nullptr); // Ensure we are in the scope of a pin
+
+    return Pin->ErasedConnections;
+}
+
+ImUserID ImNodeGraph::GetUserID(ImPinPtr ptr)
+{
+    ImNodeData& Node = GImNodeGraph->CurrentGraph->Nodes[ptr.Node];
+    return ptr.Direction ? Node.OutputPins[ptr.Pin].UserID : Node.InputPins[ptr.Pin].UserID;
+}
+
+ImPinPtr ImNodeGraph::GetPinPtr()
+{
+    // Validate global state
+    IM_ASSERT(GImNodeGraph != nullptr);
+
+    // Validate Graph state
+    ImNodeGraphContext&   G = *GImNodeGraph;
+    ImNodeGraphData*  Graph =  G.CurrentGraph;
+    IM_ASSERT(Graph != nullptr);
+
+    // Validate pin scope
+    return *Graph->CurrentPin;
 }
