@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(imnode-graph)
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 0)
+set(VERSION_PATCH 1)
+set(PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+
+project(imnode-graph VERSION ${PROJECT_VERSION})
 
 find_package(RapidJSON REQUIRED)
 
